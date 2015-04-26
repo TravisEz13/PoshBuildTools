@@ -9,19 +9,53 @@ $pullRequestTitle = ${env:APPVEYOR_PULL_REQUEST_TITLE}
 function Invoke-RunTest {
     param
     (
+        [CmdletBinding()]
         [string]
-        $filePath, 
+        $Path, 
         
         [Object[]] 
         $CodeCoverage
     )
-    Write-Info "Running tests: $filePath"
+    Write-Info "Running tests: $Path"
     $testResultsFile = 'TestsResults.xml'
-    $res = Invoke-Pester -Path $filePath -OutputFormat NUnitXml -OutputFile $testResultsFile -PassThru -CodeCoverage $CodeCoverage
-    $webClient.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path $testResultsFile))
+    
+    $res = Invoke-Pester -OutputFormat NUnitXml -OutputFile $testResultsFile -PassThru @PSBoundParameters
+    New-AppVeyorTestResult -testResultsFile $testResultsFile
     Write-Info 'Done running tests.'
     return $res
 }
+
+function New-AppVeyorTestResult
+{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$true, Position=0, HelpMessage='Please add a help message here')]
+        [Object]
+        $testResultsFile
+    )    
+
+    Invoke-WebClientUpload -url "https://ci.appveyor.com/api/testresults/nunit/${env:APPVEYOR_JOB_ID}" -path $testResultsFile 
+}
+function Invoke-WebClientUpload
+{
+
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$false, Position=0)]
+        [Object]
+        $url,
+        
+        [Parameter(Mandatory=$false, Position=1)]
+        [Object]
+        $path
+    )
+    
+    $webClient.UploadFile($url, (Resolve-Path $path))
+}
+
+
 
 function Write-Info {
      param
@@ -65,13 +99,32 @@ function Update-Nuspec
 {
     param(
         $modulePath,
-        $moduleName
+        $moduleName,
+        $version = ${env:APPVEYOR_BUILD_VERSION}
         )
 
-    Write-Info "Updating nuspec: ${env:APPVEYOR_BUILD_VERSION}; $moduleName"
+    Write-Info "Updating nuspec: $version; $moduleName"
     $nuspecPath = (Join-path $modulePath "${moduleName}.nuspec")
     [xml]$xml = Get-Content -Raw $nuspecPath
-    $xml.package.metadata.version = $env:APPVEYOR_BUILD_VERSION
+    $xml.package.metadata.version = $version
     $xml.package.metadata.id = $ModuleName
-    $xml.OuterXml | out-file -FilePath $nuspecPath
+    
+    Update-NuspecXml -nuspecXml $xml -nuspecPath $nuspecPath
+}
+
+function Update-NuspecXml
+{
+
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$true)]
+        [xml]
+        $nuspecXml,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $nuspecPath
+    )
+    
+    $nuspecXml.OuterXml | out-file -FilePath $nuspecPath
 }
