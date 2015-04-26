@@ -10,7 +10,7 @@ $pullRequestTitle = ${env:APPVEYOR_PULL_REQUEST_TITLE}
 $moduleInfo = @{
     'PoshAppVeyor' = @{
         ModulePath = '.\PoshAppVeyor'
-        CodeCoverage = @('.\ConvertToHtml\exporttohtml.psm1')
+        CodeCoverage = @('.\PoshAppVeyor\appveyor.psm1')
         Tests = @('.\tests')
                         }
 }
