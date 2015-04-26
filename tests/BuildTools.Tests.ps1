@@ -107,7 +107,7 @@ if(${env:APPVEYOR_BUILD_VERSION})
     Describe 'Install-NugetPackage'  -Fixture {
    
         it 'should install converttohtml'  -test {
-                Install-NugetPackage -package ConvertToHtml -source https://ci.appveyor.com/nuget/converttohtml-t37xti79gww1
+                Install-NugetPackage -package ConvertToHtml -source https://ci.appveyor.com/nuget/converttohtml
                 Get-Module ConvertToHtml -ListAvailable |  Should Not BeNullorEmpty
         }
     }
