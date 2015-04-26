@@ -33,7 +33,7 @@ Function Invoke-AppveyorBuild
 
     foreach($moduleName in $moduleInfo.keys)
     {
-        $ModulePath = $moduleInfo.$moduleName
+        $ModulePath = $moduleInfo.$moduleName.ModulePath
         Update-ModuleVersion -modulePath $ModulePath -moduleName $moduleName
         
         Update-Nuspec -modulePath $ModulePath -moduleName $ModuleName
