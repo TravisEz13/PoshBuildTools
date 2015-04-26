@@ -9,19 +9,36 @@ $pullRequestTitle = ${env:APPVEYOR_PULL_REQUEST_TITLE}
 function Invoke-RunTest {
     param
     (
+        [CmdletBinding()]
         [string]
-        $filePath, 
+        $Path, 
         
         [Object[]] 
         $CodeCoverage
     )
-    Write-Info "Running tests: $filePath"
+    Write-Info "Running tests: $Path"
     $testResultsFile = 'TestsResults.xml'
-    $res = Invoke-Pester -Path $filePath -OutputFormat NUnitXml -OutputFile $testResultsFile -PassThru -CodeCoverage $CodeCoverage
-    $webClient.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path $testResultsFile))
+    
+    $res = Invoke-Pester -OutputFormat NUnitXml -OutputFile $testResultsFile -PassThru @PSBoundParameters
+    New-AppVeyorTestResult -testResultsFile $testResultsFile
     Write-Info 'Done running tests.'
     return $res
 }
+
+function New-AppVeyorTestResult
+{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$true, Position=0, HelpMessage='Please add a help message here')]
+        [Object]
+        $testResultsFile
+    )
+    
+    $webClient.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path $testResultsFile))
+}
+
+
 
 function Write-Info {
      param

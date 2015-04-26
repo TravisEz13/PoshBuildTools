@@ -67,22 +67,18 @@ Describe 'Text files formatting' {
     }
 }
 
-Describe 'PowerShell DSC resource modules' {
+Describe 'PowerShell DSC modules' {
     
     # Force convert to array
-    $psm1Files = @(ls $RepoRoot -Recurse -Filter "*.psm1" -File | ? {
-        # Ignore Composite configurations
-        # They requires additional resources to be installed on the box
-        ($_.FullName -like "*\DscResources\*") -and (-not ($_.Name -like "*.schema.psm1"))
-    })
+    $psd1Files = @(ls $RepoRoot -Recurse -Filter "*.psd1" -File)
 
-    if (-not $psm1Files) {
-        Write-Verbose -Verbose "There are no resource files to analyze"
+    if (-not $psd1Files) {
+        Write-Verbose -Verbose "There are no modules files to analyze"
     } else {
 
-        Write-Verbose -Verbose "Analyzing $($psm1Files.Count) files"
+        Write-Verbose -Verbose "Analyzing $($psd1Files.Count) files"
 
-        Context 'Correctness' {
+        Context 'PSD1 Root Module Correctness' {
 
             function Get-ParseErrors
             {
@@ -98,15 +94,32 @@ Describe 'PowerShell DSC resource modules' {
             }
 
 
-            It 'all .psm1 files don''t have parse errors' {
+            It 'all .psd1 files don''t have parse errors' {
                 $errors = @()
-                $psm1Files | %{ 
-                    $localErrors = Get-ParseErrors $_.FullName
-                    if ($localErrors) {
-                        Write-Warning "There are parsing errors in $($_.FullName)"
-                        Write-Warning ($localErrors | fl | Out-String)
+                $psd1Files | %{ 
+                    if ($PSVersionTable.PSVersion.Major -eq 4)
+                    {
+                        Import-Module $_.FullName
+                        $moduleName = [System.io.path]::GetFileNameWithoutExtension($_.FullName)
+                        $moduleInfo = Get-Module $moduleName
                     }
-                    $errors += $localErrors
+                    else
+                    {                
+                        $moduleInfo = Get-Module $_.FullName -ListAvailable
+                    }
+                    $moduleBase = $moduleInfo.moduleBase
+                    $rootModule = $moduleInfo.rootModule
+                    $rootModulePath = join-path $moduleBase $RootModule
+                    if([System.io.path]::GetExtension($RootModule) -ieq '.psm1')
+                    {              
+                        Write-Verbose "Getting erros for $RootModulePath" -Verbose
+                        $localErrors = Get-ParseErrors $rootModulePath
+                        if ($localErrors) {
+                            Write-Warning "There are parsing errors in $($rootModule)"
+                            Write-Warning ($localErrors | fl | Out-String)
+                        }
+                        $errors += $localErrors
+                    }
                 }
                 $errors.Count | Should Be 0
             }
