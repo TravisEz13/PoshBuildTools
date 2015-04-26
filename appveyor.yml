@@ -3,12 +3,12 @@ version: 1.0.0.{build}
 install:
   - cinst pester -y
   - ps: |
-      Import-module .\tools\appveyor.psm1
+      Import-module .\tools\appveyorPhases.psm1
       Invoke-AppveyorInstall
 
 build_script:
   - ps: |
-      Import-module .\tools\appveyor.psm1
+      Import-module .\tools\appveyorPhases.psm1
       Invoke-AppveyorBuild      
 
 # Artifacts would not be collected if build failed. To do that, we use on_finish:
@@ -21,5 +21,5 @@ on_finish:
 
 test_script:
   - ps: |
-      Import-module .\tools\appveyor.psm1
+      Import-module .\tools\appveyorPhases.psm1
       Invoke-AppveyorTest
