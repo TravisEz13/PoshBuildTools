@@ -1,5 +1,6 @@
 # PoshAppVeyor
 PowerShell Module to help build and test powershell modules using appveyor
+
 [![Build status](https://ci.appveyor.com/api/projects/status/eq6llmtyoyfbjc66/branch/master?svg=true)](https://ci.appveyor.com/project/TravisEz13/poshappveyor/branch/master)
 
 WMF/PowerShell 5 Installation
