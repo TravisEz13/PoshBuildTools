@@ -33,9 +33,26 @@ function New-AppVeyorTestResult
         [Parameter(Mandatory=$true, Position=0, HelpMessage='Please add a help message here')]
         [Object]
         $testResultsFile
+    )    
+
+    Invoke-WebClientUpload -url "https://ci.appveyor.com/api/testresults/nunit/${env:APPVEYOR_JOB_ID}" -path $testResultsFile 
+}
+function Invoke-WebClientUpload
+{
+
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$false, Position=0)]
+        [Object]
+        $url,
+        
+        [Parameter(Mandatory=$false, Position=1)]
+        [Object]
+        $path
     )
     
-    $webClient.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path $testResultsFile))
+    $webClient.UploadFile($url, (Resolve-Path $path))
 }
 
 

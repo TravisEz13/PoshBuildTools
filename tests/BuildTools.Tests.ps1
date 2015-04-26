@@ -32,7 +32,6 @@ Describe 'Invoke-RunTest' {
         Assert-MockCalled -ModuleName BuildTools -CommandName Invoke-Pester -ParameterFilter {
                 '.\tests' | should be $Script[0]
                 $script.count | should be 1
-                $CodeCoverage | should be $null
                 $OutputFormat | should be 'NUnitXml'
                 $OutputFile | should be 'TestsResults.xml'
             }
@@ -71,4 +70,18 @@ Describe 'Write-Info' {
             }
         
     }
+}
+
+Describe 'New-AppVeyorTestResult' {
+    Mock -ModuleName BuildTools -CommandName Invoke-WebClientUpload -MockWith {
+    }
+
+    it 'should call invoke-webclientupdload' -test {
+        New-AppVeyorTestResult -testResultsFile 'foobar.xml'
+        Assert-MockCalled -ModuleName BuildTools -CommandName Invoke-WebClientUpload -ParameterFilter {
+                $url -eq "https://ci.appveyor.com/api/testresults/nunit/${env:APPVEYOR_JOB_ID}" -and `
+                $path -eq  'foobar.xml'
+            }
+    }
+
 }

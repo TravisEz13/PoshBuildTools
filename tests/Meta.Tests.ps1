@@ -102,12 +102,14 @@ Describe 'PowerShell DSC modules' {
                         Import-Module $_.FullName
                         $moduleName = [System.io.path]::GetFileNameWithoutExtension($_.FullName)
                         $moduleInfo = Get-Module $moduleName
-                    }
+                        $moduleBase = Split-Path $_.FullName
+                }
                     else
                     {                
                         $moduleInfo = Get-Module $_.FullName -ListAvailable
+                        $moduleBase = $moduleInfo.moduleBase
                     }
-                    $moduleBase = $moduleInfo.moduleBase
+                    Write-Verbose "moduleBase: $moduleBase" -Verbose
                     $rootModule = $moduleInfo.rootModule
                     $rootModulePath = join-path $moduleBase $RootModule
                     if([System.io.path]::GetExtension($RootModule) -ieq '.psm1')
