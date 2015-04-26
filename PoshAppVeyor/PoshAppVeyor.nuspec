@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>PoshAppVeyor</id>
+    <version>1.0.0.0</version>
+    <authors>Travis Plunk</authors>
+    <owners>Unknown</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Helper to build and test powershell modules in appveyor</description>
+    <releaseNotes />
+    <copyright>(c) 2015 Travis Plunk. All rights reserved.</copyright>
+    <tags>PSModule PSIncludes_Function PSFunction_Invoke-RunTest PSFunction_Write-Info PSFunction_Update-ModuleVersion PSFunction_Update-Nuspec PSCommand_Invoke-RunTest PSCommand_Write-Info PSCommand_Update-ModuleVersion PSCommand_Update-Nuspec</tags>
+  </metadata>
+</package>

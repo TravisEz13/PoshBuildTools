@@ -12,7 +12,7 @@
 RootModule = 'appveyor.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0'
+ModuleVersion = '1.0.0.0'
 
 # ID used to uniquely identify this module
 GUID = 'a64abe02-a0e4-40ac-89aa-8884f3e8639d'
@@ -27,7 +27,7 @@ CompanyName = 'Unknown'
 Copyright = '(c) 2015 Travis Plunk. All rights reserved.'
 
 # Description of the functionality provided by this module
-# Description = ''
+Description = 'Helper to build and test powershell modules in appveyor'
 
 # Minimum version of the Windows PowerShell engine required by this module
 # PowerShellVersion = ''

@@ -49,8 +49,9 @@ function Update-ModuleVersion
     {
         $FunctionsToExport += $key
     }
-    copy-item (Join-path $modulePath "${moduleName}.psd1") ".\${moduleName}Original.ps1"
-    New-ModuleManifest -Path .\ConvertToHtml\ConvertTohtml.psd1 -Guid $moduleInfo.Guid -Author $moduleInfo.Author -CompanyName $moduleInfo.CompanyName `
+    $psd1Path = (Join-path $modulePath "${moduleName}.psd1")
+    copy-item $psd1Path ".\${moduleName}Original.ps1"
+    New-ModuleManifest -Path $psd1Path -Guid $moduleInfo.Guid -Author $moduleInfo.Author -CompanyName $moduleInfo.CompanyName `
         -Copyright $moduleInfo.Copyright -RootModule $moduleInfo.RootModule -ModuleVersion $newVersion -Description $moduleInfo.Description -FunctionsToExport $FunctionsToExport
 }
 
