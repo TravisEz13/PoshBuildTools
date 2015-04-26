@@ -85,3 +85,19 @@ Describe 'New-AppVeyorTestResult' {
     }
 
 }
+
+Describe 'Update-Nuspec' {
+    $global:nuspecXml = $null
+    Mock -ModuleName BuildTools -CommandName Update-NuspecXml -MockWith {
+        $global:nuspecXml = $nuspecXml
+    }
+    
+    It 'Should' -test {
+        $version = '1.0.0.9'
+        $moduleName = 'PoshBuildTools'
+        Update-Nuspec -modulePath '.\PoshBuildTools' -moduleName 'PoshBuildTools' -Version $version
+        $global:nuspecXml | should not be $null
+        $global:nuspecXml.package.metadata.version | should be $version
+        $global:nuspecXml.package.metadata.id | should be $moduleName
+    }
+}

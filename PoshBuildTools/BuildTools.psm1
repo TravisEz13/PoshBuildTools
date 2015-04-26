@@ -99,13 +99,32 @@ function Update-Nuspec
 {
     param(
         $modulePath,
-        $moduleName
+        $moduleName,
+        $version = ${env:APPVEYOR_BUILD_VERSION}
         )
 
-    Write-Info "Updating nuspec: ${env:APPVEYOR_BUILD_VERSION}; $moduleName"
+    Write-Info "Updating nuspec: $version; $moduleName"
     $nuspecPath = (Join-path $modulePath "${moduleName}.nuspec")
     [xml]$xml = Get-Content -Raw $nuspecPath
-    $xml.package.metadata.version = $env:APPVEYOR_BUILD_VERSION
+    $xml.package.metadata.version = $version
     $xml.package.metadata.id = $ModuleName
-    $xml.OuterXml | out-file -FilePath $nuspecPath
+    
+    Update-NuspecXml -nuspecXml $xml -nuspecPath $nuspecPath
+}
+
+function Update-NuspecXml
+{
+
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$true)]
+        [xml]
+        $nuspecXml,
+        [Parameter(Mandatory=$true)]
+        [string]
+        $nuspecPath
+    )
+    
+    $nuspecXml.OuterXml | out-file -FilePath $nuspecPath
 }
