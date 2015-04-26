@@ -101,3 +101,14 @@ Describe 'Update-Nuspec' {
         $global:nuspecXml.package.metadata.id | should be $moduleName
     }
 }
+
+if(${env:APPVEYOR_BUILD_VERSION})
+{
+    Describe 'Install-NugetPackage'  -Fixture {
+   
+        it 'should install converttohtml'  -test {
+                Install-NugetPackage -package ConvertToHtml -source https://ci.appveyor.com/nuget/converttohtml-t37xti79gww1
+                Get-Module ConvertToHtml -ListAvailable |  Should Not BeNullorEmpty
+        }
+    }
+}
