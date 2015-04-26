@@ -7,13 +7,13 @@ WMF/PowerShell 5 Installation
 --------------------------------
 From PowerShell run:
 
-	Register-PSRepository -Name converttohtml -SourceLocation https://ci.appveyor.com/nuget/poshappveyor-odx6b5glnf32
-	Install-Module converttohtml -Scope CurrentUser
+	Register-PSRepository -Name PoshAppVeyor -SourceLocation https://ci.appveyor.com/nuget/poshappveyor-odx6b5glnf32
+	Install-Module PoshAppVeyor -Scope CurrentUser
 
 WMF/PowerShell 4 Installation
 -----------------------------
  1. Download nuget.exe from [NuGet.org](https://nuget.org/nuget.exe) 
- 2. &nuget.exe install ConvertToHtml -source https://ci.appveyor.com/nuget/poshappveyor-odx6b5glnf32 -outputDirectory "$env:USERPROFILE\Documents\WindowsPowerShell\Modules\" -ExcludeVersion
+ 2. &nuget.exe install PoshAppVeyor -source https://ci.appveyor.com/nuget/poshappveyor-odx6b5glnf32 -outputDirectory "$env:USERPROFILE\Documents\WindowsPowerShell\Modules\" -ExcludeVersion
 
 Examples/Testing:
 -----------------
