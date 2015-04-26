@@ -49,6 +49,8 @@ Function Invoke-AppveyorBuild
 
             Write-Info 'Creating module zip ...'
             7z a -tzip ".\out\$ModuleName.zip" ".\$ModuleName\*.*"
+
+            $script:moduleBuildCount ++
         }
         else 
         {
