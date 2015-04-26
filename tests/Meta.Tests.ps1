@@ -97,30 +97,37 @@ Describe 'PowerShell DSC modules' {
             It 'all .psd1 files don''t have parse errors' {
                 $errors = @()
                 $psd1Files | %{ 
+                    $rootModule = $null
                     if ($PSVersionTable.PSVersion.Major -eq 4)
                     {
                         Import-Module $_.FullName
                         $moduleName = [System.io.path]::GetFileNameWithoutExtension($_.FullName)
                         $moduleInfo = Get-Module $moduleName
                         $moduleBase = Split-Path $_.FullName
-                }
+                        $moduleInfo | write-host
+                    }
                     else
                     {                
                         $moduleInfo = Get-Module $_.FullName -ListAvailable
                         $moduleBase = $moduleInfo.moduleBase
+                        $rootModule = $moduleInfo.rootModule
                     }
-                    Write-Verbose "moduleBase: $moduleBase" -Verbose
-                    $rootModule = $moduleInfo.rootModule
-                    $rootModulePath = join-path $moduleBase $RootModule
-                    if([System.io.path]::GetExtension($RootModule) -ieq '.psm1')
-                    {              
-                        Write-Verbose "Getting erros for $RootModulePath" -Verbose
-                        $localErrors = Get-ParseErrors $rootModulePath
-                        if ($localErrors) {
-                            Write-Warning "There are parsing errors in $($rootModule)"
-                            Write-Warning ($localErrors | fl | Out-String)
+                    if($rootModule)
+                    {
+
+                        Write-Verbose "moduleBase: $moduleBase" -Verbose
+                        
+                        $rootModulePath = join-path $moduleBase $RootModule
+                        if([System.io.path]::GetExtension($RootModule) -ieq '.psm1')
+                        {              
+                            Write-Verbose "Getting erros for $RootModulePath" -Verbose
+                            $localErrors = Get-ParseErrors $rootModulePath
+                            if ($localErrors) {
+                                Write-Warning "There are parsing errors in $($rootModule)"
+                                Write-Warning ($localErrors | fl | Out-String)
+                            }
+                            $errors += $localErrors
                         }
-                        $errors += $localErrors
                     }
                 }
                 $errors.Count | Should Be 0
