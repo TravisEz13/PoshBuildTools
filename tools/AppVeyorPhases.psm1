@@ -1,7 +1,5 @@
 [string] $moduleDir = Split-Path -Path $script:MyInvocation.MyCommand.Path -Parent
 
-Import-Module $moduleDir\..\PoshAppVeyor
-
 Set-StrictMode -Version latest
 $webClient = New-Object 'System.Net.WebClient';
 $repoName = ${env:APPVEYOR_REPO_NAME}
@@ -9,8 +7,8 @@ $branchName = $env:APPVEYOR_REPO_BRANCH
 $pullRequestTitle = ${env:APPVEYOR_PULL_REQUEST_TITLE}
 $moduleInfo = @{
     'PoshAppVeyor' = @{
-        ModulePath = '.\PoshAppVeyor'
-        CodeCoverage = @('.\PoshAppVeyor\appveyor.psm1')
+        ModulePath = '.\PoshBuildTools'
+        CodeCoverage = @('.\PoshBuildTools\BuildTools.psm1')
         Tests = @('.\tests')
                         }
 }
