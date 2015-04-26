@@ -1,5 +1,6 @@
 [string] $moduleDir = Split-Path -Path $script:MyInvocation.MyCommand.Path -Parent
 
+Import-Module $moduleDir\..\PoshAppVeyor
 Set-StrictMode -Version latest
 $webClient = New-Object 'System.Net.WebClient';
 $repoName = ${env:APPVEYOR_REPO_NAME}
