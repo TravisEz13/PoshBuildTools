@@ -7,7 +7,7 @@ $repoName = ${env:APPVEYOR_REPO_NAME}
 $branchName = $env:APPVEYOR_REPO_BRANCH
 $pullRequestTitle = ${env:APPVEYOR_PULL_REQUEST_TITLE}
 $moduleInfo = @{
-    'PoshAppVeyor' = @{
+    'PoshBuildTools' = @{
         ModulePath = '.\PoshBuildTools'
         CodeCoverage = @('.\PoshBuildTools\BuildTools.psm1')
         Tests = @('.\tests')
@@ -22,8 +22,10 @@ Function Invoke-AppveyorInstall
     {
         Write-Info "Pull Request:  $pullRequestTitle"    
     }
+    Write-Info "Installing pester using nuget"
+    &nuget.exe install pester -source https://www.powershellgallery.com/api/v2 -outputDirectory "$env:USERPROFILE\Documents\WindowsPowerShell\Modules\" -ExcludeVersion
     
-    Write-Info "Installing converttohtml"
+    Write-Info "Installing converttohtml using nuget"
     &nuget.exe install ConvertToHtml -source https://ci.appveyor.com/nuget/converttohtml-t37xti79gww1 -outputDirectory "$env:USERPROFILE\Documents\WindowsPowerShell\Modules\" -ExcludeVersion
 
     Write-Info 'End Install stage.'
@@ -79,7 +81,7 @@ Function Invoke-AppveyorTest
                 $res = Invoke-RunTest -filePath $_ -CodeCoverage $CodeCoverage
                 $script:failedTestsCount += $res.FailedCount 
                 $CodeCoverageTitle = 'Code Coverage {0:F1}%'  -f (100 * ($res.CodeCoverage.NumberOfCommandsExecuted /$res.CodeCoverage.NumberOfCommandsAnalyzed))
-                $res.CodeCoverage.MissedCommands | ConvertTo-FormattedHtml -title $CodeCoverageTitle | out-file .\examples\CodeCoverage.html
+                $res.CodeCoverage.MissedCommands | ConvertTo-FormattedHtml -title $CodeCoverageTitle | out-file .\out\CodeCoverage.html
             }
         }
     }
