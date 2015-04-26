@@ -112,6 +112,31 @@ function Update-Nuspec
     Update-NuspecXml -nuspecXml $xml -nuspecPath $nuspecPath
 }
 
+function New-BuildModuleInfo
+{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$true)]
+        [string]
+                        $ModuleName ,
+        [Parameter(Mandatory=$true)]
+        [string]
+                        $ModulePath ,
+                        [string[]] $CodeCoverage,
+                        [string[]] $Tests = @('.\tests')
+    )
+
+    $moduleInfo = New-Object PSObject -Property @{
+        ModuleName = $ModuleName
+        ModulePath = $ModulePath
+        CodeCoverage = $CodeCoverage
+        Tests = $Tests
+        }
+    $moduleInfo.pstypenames.clear()
+    $moduleInfo.pstypenames.add('PoshBuildTools.Build.ModuleInfo')
+    return $moduleInfo
+}
 function Update-NuspecXml
 {
 
@@ -127,4 +152,27 @@ function Update-NuspecXml
     )
     
     $nuspecXml.OuterXml | out-file -FilePath $nuspecPath
+}
+
+
+function Install-NugetPackage
+{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$false)]
+        [System.String]
+        $source = 'https://www.powershellgallery.com/api/v2',
+        
+        [Parameter(Mandatory=$false)]
+        [Object]
+        $outputDirectory = "$env:USERPROFILE\Documents\WindowsPowerShell\Modules\",
+
+        [Parameter(Mandatory=$true, Position=0)]
+        [String]
+        $package
+    )
+
+    Write-Info "Installing $package using nuget"
+    &nuget.exe install $package -source $source -outputDirectory $outputDirectory -ExcludeVersion
 }

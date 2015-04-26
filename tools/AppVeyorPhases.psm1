@@ -6,13 +6,8 @@ $webClient = New-Object 'System.Net.WebClient';
 $repoName = ${env:APPVEYOR_REPO_NAME}
 $branchName = $env:APPVEYOR_REPO_BRANCH
 $pullRequestTitle = ${env:APPVEYOR_PULL_REQUEST_TITLE}
-$moduleInfo = @{
-    'PoshBuildTools' = @{
-        ModulePath = '.\PoshBuildTools'
-        CodeCoverage = @('.\PoshBuildTools\BuildTools.psm1')
-        Tests = @('.\tests')
-                        }
-}
+$moduleInfoList = @()
+$moduleInfoList += New-BuildModuleInfo -ModuleName 'PoshBuildTools' -ModulePath '.\PoshBuildTools' -CodeCoverage @('.\PoshBuildTools\BuildTools.psm1') -Tests @('.\tests')
 Function Invoke-AppveyorInstall
 {
     Write-Info 'Starting Install stage...'
@@ -22,14 +17,10 @@ Function Invoke-AppveyorInstall
     {
         Write-Info "Pull Request:  $pullRequestTitle"    
     }
-    Write-Info "Installing pester using nuget"
-    &nuget.exe install pester -source https://www.powershellgallery.com/api/v2 -outputDirectory "$env:USERPROFILE\Documents\WindowsPowerShell\Modules\" -ExcludeVersion
-    
-    Write-Info "Installing converttohtml using nuget"
-    &nuget.exe install ConvertToHtml -source https://ci.appveyor.com/nuget/converttohtml-t37xti79gww1 -outputDirectory "$env:USERPROFILE\Documents\WindowsPowerShell\Modules\" -ExcludeVersion
+
+    Install-NugetPackage -package pester
 
     Write-Info 'End Install stage.'
-
 }
 
 Function Invoke-AppveyorBuild
@@ -39,9 +30,10 @@ Function Invoke-AppveyorBuild
     mkdir -force .\nuget > $null
     mkdir -force .\examples > $null
 
-    foreach($moduleName in $moduleInfo.keys)
+    foreach($moduleInfo in $moduleInfoList)
     {
-        $ModulePath = $moduleInfo.$moduleName.ModulePath
+        $ModuleName = $moduleInfo.ModuleName
+        $ModulePath = $moduleInfo.ModulePath
         if(test-path $modulePath)
         {
             Update-ModuleVersion -modulePath $ModulePath -moduleName $moduleName
@@ -70,13 +62,15 @@ Function Invoke-AppveyorTest
     $script:failedTestsCount = 0
     #
 
-    foreach($moduleName in $moduleInfo.keys)
+    foreach($moduleInfo in $moduleInfoList)
     {
-        $ModulePath = $moduleInfo.$moduleName.ModulePath
+        $ModuleName = $moduleInfo.ModuleName
+        $ModulePath = $moduleInfo.ModulePath
+        $ModulePath = $moduleInfo.ModulePath
         if(test-path $modulePath)
         {
-            $CodeCoverage = $moduleInfo.$moduleName.CodeCoverage
-            $tests = $moduleInfo.$moduleName.Tests
+            $CodeCoverage = $moduleInfo.CodeCoverage
+            $tests = $moduleInfo.Tests
             $tests | %{ 
                 $res = Invoke-RunTest -filePath $_ -CodeCoverage $CodeCoverage
                 $script:failedTestsCount += $res.FailedCount 
@@ -101,7 +95,7 @@ Function Invoke-AppveyorTest
         }
         else 
         {
-            Write-Info "Skipping nuget package publishing because the build is not for the master branch or is a pull request."
+            Write-Info 'Skipping nuget package publishing because the build is not for the master branch or is a pull request.'
         }
     }
     Write-Info 'End Test Stage.'
