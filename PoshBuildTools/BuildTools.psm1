@@ -43,16 +43,22 @@ function Update-ModuleVersion
     $versionParts = ($env:APPVEYOR_BUILD_VERSION).split('.')
     Import-Module $modulePath
     $moduleInfo = Get-Module -Name $moduleName
-    $newVersion = New-Object -TypeName 'System.Version' -ArgumentList @($versionParts[0],$versionParts[1],$versionParts[2],$versionParts[3])
-    $FunctionsToExport = @()
-    foreach($key in $moduleInfo.ExportedFunctions.Keys)
+    if($moduleInfo)
     {
-        $FunctionsToExport += $key
+        $newVersion = New-Object -TypeName 'System.Version' -ArgumentList @($versionParts[0],$versionParts[1],$versionParts[2],$versionParts[3])
+        $FunctionsToExport = @()
+        foreach($key in $moduleInfo.ExportedFunctions.Keys)
+        {
+            $FunctionsToExport += $key
+        }
+        $psd1Path = (Join-path $modulePath "${moduleName}.psd1")
+        copy-item $psd1Path ".\${moduleName}Original.ps1"
+        New-ModuleManifest -Path $psd1Path -Guid $moduleInfo.Guid -Author $moduleInfo.Author -CompanyName $moduleInfo.CompanyName `
+            -Copyright $moduleInfo.Copyright -RootModule $moduleInfo.RootModule -ModuleVersion $newVersion -Description $moduleInfo.Description -FunctionsToExport $FunctionsToExport
     }
-    $psd1Path = (Join-path $modulePath "${moduleName}.psd1")
-    copy-item $psd1Path ".\${moduleName}Original.ps1"
-    New-ModuleManifest -Path $psd1Path -Guid $moduleInfo.Guid -Author $moduleInfo.Author -CompanyName $moduleInfo.CompanyName `
-        -Copyright $moduleInfo.Copyright -RootModule $moduleInfo.RootModule -ModuleVersion $newVersion -Description $moduleInfo.Description -FunctionsToExport $FunctionsToExport
+    else {
+        throw "Couldn't load moduleInfo for $moduleName"
+    }
 }
 
 function Update-Nuspec
