@@ -23,6 +23,9 @@ Function Invoke-AppveyorInstall
     {
         Write-Info "Pull Request:  $pullRequestTitle"    
     }
+    
+    Write-Info "Installing converttohtml"
+    &nuget.exe install ConvertToHtml -source https://ci.appveyor.com/nuget/converttohtml-t37xti79gww1 -outputDirectory "$env:USERPROFILE\Documents\WindowsPowerShell\Modules\" -ExcludeVersion
 
     Write-Info 'End Install stage.'
 

@@ -19,6 +19,8 @@ on_finish:
   - ps: |
       ls .\out | % { Push-AppveyorArtifact $_.FullName }
 
+cache:
+  - packages -> **\packages.config
 test_script:
   - ps: |
       Import-module .\tools\appveyorPhases.psm1
