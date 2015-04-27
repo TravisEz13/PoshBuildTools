@@ -31,7 +31,7 @@ function Invoke-RunTest {
     $res = Invoke-Pester -OutputFormat NUnitXml -OutputFile $testResultsFile -PassThru @PSBoundParameters
     New-AppVeyorTestResult -testResultsFile $testResultsFile
     Write-Info 'Done running tests.'
-    Write-Info 'Test result Type: $($res.gettype().fullname)'
+    Write-Info "Test result Type: $($res.gettype().fullname)"
     return $res
 }
 
@@ -139,6 +139,8 @@ Function Invoke-AppveyorFinish
     Write-Info 'Starting finish stage...'
 
 
+    Get-ChildItem .\out | % { Push-AppveyorArtifact $_.FullName }
+
     if ($env:PoshBuildTool_failedTestsCount -gt 0) 
     { 
         throw "${env:PoshBuildTool_failedTestsCount} tests failed."
@@ -165,7 +167,6 @@ Function Invoke-AppveyorFinish
             Write-Info 'Skipping nuget package publishing because the build is not for the master branch or is a pull request.'
         }
     }
-    Get-ChildItem .\out | % { Push-AppveyorArtifact $_.FullName }
     Write-Info 'End Finish Stage.'
 
 }
