@@ -39,15 +39,14 @@ function New-AppVeyorTestResult
 }
 function Invoke-WebClientUpload
 {
-
     [CmdletBinding()]
     param
     (
-        [Parameter(Mandatory=$false, Position=0)]
+        [Parameter(Mandatory=$true, Position=0)]
         [Object]
         $url,
         
-        [Parameter(Mandatory=$false, Position=1)]
+        [Parameter(Mandatory=$true, Position=1)]
         [Object]
         $path
     )
@@ -60,6 +59,7 @@ function Invoke-WebClientUpload
 function Write-Info {
      param
      (
+         [Parameter(Mandatory=$true, Position=0)]
          [string]
          $message
      )
@@ -69,30 +69,86 @@ function Write-Info {
 
 function Update-ModuleVersion
 {
+    [CmdletBinding()]
     param(
+        [Parameter(Mandatory=$true, Position=0)]
+        [string]
         $modulePath,
-        $moduleName
+
+        [Parameter(Mandatory=$true, Position=1)]
+        [string]
+        $moduleName,
+
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $version = $env:APPVEYOR_BUILD_VERSION
         )
-    Write-Info "Updating Module version to: ${env:APPVEYOR_BUILD_VERSION}"
-    $versionParts = ($env:APPVEYOR_BUILD_VERSION).split('.')
-    Import-Module $modulePath
-    $moduleInfo = Get-Module -Name $moduleName
+    Write-Info "Updating Module version to: $version"
+
+    $moduleInfo = Get-ModuleByPath -modulePath $modulePath -moduleName $moduleName
     if($moduleInfo)
     {
-        $newVersion = New-Object -TypeName 'System.Version' -ArgumentList @($versionParts[0],$versionParts[1],$versionParts[2],$versionParts[3])
+        $newVersion = ConvertTo-Version -version $version
         $FunctionsToExport = @()
         foreach($key in $moduleInfo.ExportedFunctions.Keys)
         {
             $FunctionsToExport += $key
         }
         $psd1Path = (Join-path $modulePath "${moduleName}.psd1")
-        copy-item $psd1Path ".\${moduleName}Original.ps1"
+        copy-item $psd1Path ".\${moduleName}Original.psd1.tmp"
         New-ModuleManifest -Path $psd1Path -Guid $moduleInfo.Guid -Author $moduleInfo.Author -CompanyName $moduleInfo.CompanyName `
             -Copyright $moduleInfo.Copyright -RootModule $moduleInfo.RootModule -ModuleVersion $newVersion -Description $moduleInfo.Description -FunctionsToExport $FunctionsToExport
     }
     else {
         throw "Couldn't load moduleInfo for $moduleName"
     }
+}
+
+function Get-ModuleByPath
+{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$false, Position=0)]
+        [string]
+        $modulePath ,
+
+        [Parameter(Mandatory=$false, Position=1)]
+        [string]
+        $moduleName
+    )
+    $modulePath = (Resolve-Path $modulePath).ProviderPath
+    
+    
+    Write-Info "Getting module info for: $modulePath"
+    
+    $getParams = @{}
+    if ($PSVersionTable.PSVersion.Major -ge 5)
+    {
+        $getParams.Add('listAvailable', $true)
+    }
+    
+    Import-Module $modulePath -Verbose -Force
+    $moduleInfo = Get-Module -Name $moduleName @getParams -Verbose
+    return $moduleInfo
+}
+
+
+
+function ConvertTo-Version
+{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$true, Position=0)]
+        [String]
+        $version
+    )
+    
+    
+    $versionParts = $version.split('.')
+    $newVersion = New-Object -TypeName 'System.Version' -ArgumentList @($versionParts[0],$versionParts[1],$versionParts[2],$versionParts[3])
+    return $newVersion
 }
 
 function Update-Nuspec

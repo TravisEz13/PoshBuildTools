@@ -95,7 +95,7 @@ Describe 'Update-Nuspec' {
     It 'Should' -test {
         $version = '1.0.0.9'
         $moduleName = 'PoshBuildTools'
-        Update-Nuspec -modulePath '.\PoshBuildTools' -moduleName 'PoshBuildTools' -Version $version
+        Update-Nuspec -modulePath '.\PoshBuildTools' -moduleName $moduleName -Version $version
         $global:nuspecXml | should not be $null
         $global:nuspecXml.package.metadata.version | should be $version
         $global:nuspecXml.package.metadata.id | should be $moduleName
@@ -108,7 +108,73 @@ if(${env:APPVEYOR_BUILD_VERSION})
    
         it 'should install converttohtml'  -test {
                 Install-NugetPackage -package ConvertToHtml -source https://ci.appveyor.com/nuget/converttohtml
-                Get-Module ConvertToHtml -ListAvailable |  Should Not BeNullorEmpty
+                $getParams = @{}
+                if ($PSVersionTable.PSVersion.Major -ge 5)
+                {
+                    $getParams.Add('listAvailable', $true)
+                }
+                else
+                {
+                    Import-Module ConvertToHtml
+                }
+
+                Get-Module ConvertToHtml @getParams |  Should Not BeNullorEmpty
         }
+    }
+}
+
+Describe 'Update-ModuleVersion' -Fixture {
+
+    Mock -ModuleName BuildTools -CommandName New-ModuleManifest -MockWith {
+    }
+    
+    It 'should update version' -test {
+        $version = '1.0.0.9'
+        $versionObj = ConvertTo-Version -version $version
+        $moduleName = 'PoshBuildTools'
+        $modulePath = (Resolve-Path (Join-path $RepoRoot '.\PoshBuildTools')).ProviderPath
+        $psd1Path = (Join-path $modulePath "${moduleName}.psd1")
+
+        Import-Module $modulePath
+        $moduleInfo = Get-ModuleByPath -modulePath $modulePath -moduleName $moduleName
+
+        Update-ModuleVersion -modulePath $modulePath -moduleName 'PoshBuildTools' -Version $version
+
+#        New-ModuleManifest -Path $psd1Path -Guid $moduleInfo.Guid -Author $moduleInfo.Author -CompanyName $moduleInfo.CompanyName `
+#            -Copyright $moduleInfo.Copyright -RootModule $moduleInfo.RootModule -ModuleVersion $newVersion -Description $moduleInfo.Description -FunctionsToExport $FunctionsToExport
+
+        Assert-MockCalled -ModuleName BuildTools -CommandName New-ModuleManifest -Scope It -ParameterFilter {
+                $ModuleVersion | should be $versionObj
+                $Path | should be  $psd1Path
+                $Author | should be $moduleInfo.Author 
+                $CompanyName | should be $moduleInfo.CompanyName 
+                $Copyright | should be $moduleInfo.Copyright 
+                $RootModule | should be $moduleInfo.RootModule 
+                $Description | should be $moduleInfo.Description
+                if ($PSVersionTable.PSVersion.Major -ge 5)
+                {
+                    # these tests don't work in appveyor
+                    $Guid | should be $moduleInfo.Guid
+                }
+            } -Exactly -Times 1
+        
+    }
+}
+
+Describe 'New-BuildModuleInfo' -Fixture {
+    It 'should return an object with matching properties' {
+        $params = @{
+                ModuleName = 'foo'
+                ModulePath = 'bar'
+                CodeCoverage = @('m1','m2')
+                Tests =  @('t1','t2')
+            }
+        $result = New-BuildModuleInfo @params
+        $result.ModuleName | should be $params.ModuleName 
+        $result.ModulePath | should be $params.ModulePath
+        $result.CodeCoverage[0] | should be $params.CodeCoverage[0] 
+        $result.CodeCoverage[1] | should be $params.CodeCoverage[1] 
+        $result.Tests[0] | should be $params.Tests[0] 
+        $result.Tests[1] | should be $params.Tests[1] 
     }
 }
