@@ -125,7 +125,7 @@ Function Invoke-AppveyorFinish
 
     if ($env:PoshBuildTool_failedTestsCount -gt 0) 
     { 
-        throw "$($script:failedTestsCount) tests failed."
+        throw "${env:PoshBuildTool_failedTestsCount} tests failed."
     } 
     elseif($env:PoshBuildTool_passedTestsCount -eq 0)
     {
@@ -133,7 +133,7 @@ Function Invoke-AppveyorFinish
     }
     elseif($env:PoshBuildTool_ModuleCount -ne $expectedModuleCount)
     {
-        throw "built ${script:moduleBuildCount} modules, but expected ${expectedModuleCount}"
+        throw "built ${env:PoshBuildTool_ModuleCount} modules, but expected ${expectedModuleCount}"
     } 
     else 
     {       
@@ -260,9 +260,12 @@ function Update-ModuleVersion
             $FunctionsToExport += $key
         }
         $psd1Path = (Join-path $modulePath "${moduleName}.psd1")
+        $psd1PathUni = (Join-path $modulePath "${moduleName}.psd1.uni.tmp")
         copy-item $psd1Path ".\${moduleName}Original.psd1.tmp"
-        New-ModuleManifest -Path $psd1Path -Guid $moduleInfo.Guid -Author $moduleInfo.Author -CompanyName $moduleInfo.CompanyName `
+        New-ModuleManifest -Path $psd1PathUni -Guid $moduleInfo.Guid -Author $moduleInfo.Author -CompanyName $moduleInfo.CompanyName `
             -Copyright $moduleInfo.Copyright -RootModule $moduleInfo.RootModule -ModuleVersion $newVersion -Description $moduleInfo.Description -FunctionsToExport $FunctionsToExport
+        Get-Content $psd1PathUni -Raw | out-file -filePath $psd1Path -force -width [int]::MaxValue 
+        del $psd1PathUni
     }
     else {
         throw "Couldn't load moduleInfo for $moduleName"

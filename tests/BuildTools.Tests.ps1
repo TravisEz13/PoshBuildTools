@@ -129,17 +129,18 @@ Describe 'Invoke-AppVeyorInstall' {
     }
 
 
-    It 'should call install-nugetpackage' {
-        Invoke-AppveyorInstall -installPester
+    It 'should call install-nugetpackage for pester' {
+        Invoke-AppveyorInstall -skipConvertToHtmlInstall
         Assert-MockCalled -ModuleName BuildTools -CommandName Install-NugetPackage -Scope It -ParameterFilter {
                 $package | should be 'pester'
             } -Times 1 -Exactly
     }
-    It 'should not call install-nugetpackage' {
-        Invoke-AppveyorInstall 
-        Assert-MockCalled -ModuleName BuildTools -CommandName Install-NugetPackage -Scope It  -Times 0 -Exactly
+    It 'should call install-nugetpackage for converttohtml' {
+        Invoke-AppveyorInstall -skipConvertToHtmlInstall
+        Assert-MockCalled -ModuleName BuildTools -CommandName Install-NugetPackage -Scope It -ParameterFilter {
+                $package | should be 'ConvertToHtml'
+            } -Times 1 -Exactly
     }
-
 }
 
 Describe 'Update-ModuleVersion' -Fixture {
