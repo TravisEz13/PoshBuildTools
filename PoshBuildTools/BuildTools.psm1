@@ -128,8 +128,8 @@ function Get-ModuleByPath
         $getParams.Add('listAvailable', $true)
     }
     
-    Import-Module $modulePath -Verbose -Force
-    $moduleInfo = Get-Module -Name $moduleName @getParams -Verbose
+    Import-Module $modulePath -Force
+    $moduleInfo = Get-Module -Name $moduleName @getParams
     return $moduleInfo
 }
 
