@@ -1,7 +1,7 @@
 [string] $moduleDir = Split-Path -Path $script:MyInvocation.MyCommand.Path -Parent
 
 Set-StrictMode -Version latest
-Write-Verbose 'Initializing PoshBuildTools' -Verbose
+Write-Verbose 'Initializing PoshBuildTools'
 $webClient = New-Object 'System.Net.WebClient';
 $global:appveyor_repoName = ${env:APPVEYOR_REPO_NAME}
 $global:appveyor_repoBranch = $env:APPVEYOR_REPO_BRANCH
@@ -334,12 +334,15 @@ function New-BuildModuleInfo
     (
         [Parameter(Mandatory=$true)]
         [string]
-                        $ModuleName ,
+        $ModuleName ,
+
         [Parameter(Mandatory=$true)]
         [string]
-                        $ModulePath ,
-                        [string[]] $CodeCoverage,
-                        [string[]] $Tests = @('.\tests')
+        $ModulePath ,
+
+        [string[]] $CodeCoverage,
+
+        [string[]] $Tests
     )
 
     $moduleInfo = New-Object PSObject -Property @{
