@@ -260,7 +260,12 @@ function Update-ModuleVersion
             $FunctionsToExport += $key
         }
         $psd1Path = (Join-path $modulePath "${moduleName}.psd1")
-        $psd1PathUni = (Join-path $modulePath "${moduleName}.psd1.uni.tmp")
+        $tempFolder = Join-path $env:temp "${ModuleName}-Update-ModuleVersion"
+        if(!(test-path $tempFolder))
+        {
+            mkdir $tempFolder > $null
+        }
+        $psd1PathUni = (Join-path $tempFolder "${moduleName}.psd1")
         copy-item $psd1Path ".\${moduleName}Original.psd1.tmp"
         New-ModuleManifest -Path $psd1PathUni -Guid $moduleInfo.Guid -Author $moduleInfo.Author -CompanyName $moduleInfo.CompanyName `
             -Copyright $moduleInfo.Copyright -RootModule $moduleInfo.RootModule -ModuleVersion $newVersion -Description $moduleInfo.Description -FunctionsToExport $FunctionsToExport
@@ -314,8 +319,7 @@ function ConvertTo-Version
     )
     
     
-    $versionParts = $version.split('.')
-    $newVersion = New-Object -TypeName 'System.Version' -ArgumentList @($versionParts[0],$versionParts[1],$versionParts[2],$versionParts[3])
+    $newVersion = New-Object -TypeName 'System.Version' -ArgumentList @($version)
     return $newVersion
 }
 
