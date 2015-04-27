@@ -1,15 +1,16 @@
 version: 1.0.0.{build}
 
-#  - cinst pester -y
 install:
   - ps: |
-      Import-module .\tools\appveyorPhases.psm1
-      Invoke-AppveyorInstall
+      Import-Module .\PoshBuildTools
+      $moduleInfoList = @()
+      $moduleInfoList += New-BuildModuleInfo -ModuleName 'PoshBuildTools' -ModulePath '.\PoshBuildTools' -CodeCoverage @('.\PoshBuildTools\BuildTools.psm1') -Tests @('.\tests')
+      Invoke-AppveyorInstall -InstallPester
 
 build_script:
   - ps: |
-      Import-module .\tools\appveyorPhases.psm1
-      Invoke-AppveyorBuild      
+      Import-Module .\PoshBuildTools
+      Invoke-AppveyorBuild -moduleInfoList $moduleInfoList      
 
 # Artifacts would not be collected if build failed. To do that, we use on_finish:
 #-artifacts:
@@ -17,11 +18,12 @@ build_script:
 
 on_finish:
   - ps: |
-      ls .\out | % { Push-AppveyorArtifact $_.FullName }
+      Import-Module .\PoshBuildTools
+      Invoke-AppveyorFinish -moduleInfoList $moduleInfoList -expectedModuleCount 1
 
 cache:
   - C:\Users\appveyor\AppData\Local\NuGet\Cache
 test_script:
   - ps: |
-      Import-module .\tools\appveyorPhases.psm1
-      Invoke-AppveyorTest
+      Import-Module .\PoshBuildTools
+      Invoke-AppveyorTest -moduleInfoList $moduleInfoList 
