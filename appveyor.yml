@@ -5,7 +5,7 @@ install:
       Import-Module .\PoshBuildTools
       $moduleInfoList = @()
       $moduleInfoList += New-BuildModuleInfo -ModuleName 'PoshBuildTools' -ModulePath '.\PoshBuildTools' -CodeCoverage @('.\PoshBuildTools\BuildTools.psm1') -Tests @('.\tests')
-      Invoke-AppveyorInstall -InstallPester
+      Invoke-AppveyorInstall -skipConvertToHtmlInstall
 
 build_script:
   - ps: |

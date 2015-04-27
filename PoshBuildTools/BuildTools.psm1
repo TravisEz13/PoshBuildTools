@@ -33,7 +33,9 @@ Function Invoke-AppveyorInstall
     param
     (
         [switch]
-        $installPester
+        $skipPesterInstall,
+        [switch]
+        $skipConvertToHtmlInstall
     )
 
     Write-Info 'Starting Install stage...'
@@ -44,11 +46,16 @@ Function Invoke-AppveyorInstall
         Write-Info "Pull Request:  $global:appveyor_pullRequestTitle"    
     }
 
-    if($installPester)
+    if(!$skipPesterInstall)
     {
         Install-NugetPackage -package pester
     }
     
+    if(!$skipConvertToHtmlInstall)
+    {
+        Install-NugetPackage -package ConvertToHtml -source https://ci.appveyor.com/nuget/converttohtml
+    }
+
     Write-Info 'End Install stage.'
 }
 
