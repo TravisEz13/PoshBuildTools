@@ -1,6 +1,7 @@
 [string] $moduleDir = Split-Path -Path $script:MyInvocation.MyCommand.Path -Parent
 
 Set-StrictMode -Version latest
+Write-Verbose 'Initializing PoshBuildTools' -Verbose
 $webClient = New-Object 'System.Net.WebClient';
 $global:appveyor_repoName = ${env:APPVEYOR_REPO_NAME}
 $global:appveyor_repoBranch = $env:APPVEYOR_REPO_BRANCH
@@ -8,7 +9,6 @@ $global:appveyor_pullRequestTitle = ${env:APPVEYOR_PULL_REQUEST_TITLE}
 $script:moduleBuildCount = 0
 $script:failedTestsCount = 0
 $script:passedTestsCount = 0
-
 function Invoke-RunTest {
     param
     (
