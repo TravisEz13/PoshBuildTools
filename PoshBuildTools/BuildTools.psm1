@@ -65,6 +65,7 @@ function Test-BuildInfoList
             throw "Must be an array of type $buildInfoType"
         }
     }
+    return $true
 }
 Function Invoke-AppveyorBuild
 {
