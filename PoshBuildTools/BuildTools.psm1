@@ -102,6 +102,7 @@ Function Invoke-AppveyorBuild
             Write-Warning "Couldn't find module, $ModuleName at $ModulePath.."
         }
     }
+    Set-AppveyorBuildVariable -Name PoshBuildTool_ModuleCount -Value $script:moduleBuildCount
     Write-Info 'End Build Stage.'
 }
 Function Invoke-AppveyorFinish
@@ -115,15 +116,15 @@ Function Invoke-AppveyorFinish
     Write-Info 'Starting finish stage...'
 
 
-    if ($script:failedTestsCount -gt 0) 
+    if ($env:PoshBuildTool_failedTestsCount -gt 0) 
     { 
         throw "$($script:failedTestsCount) tests failed."
     } 
-    elseif($script:passedTestsCount -eq 0)
+    elseif($env:PoshBuildTool_passedTestsCount -eq 0)
     {
         throw 'no tests passed'
     }
-    elseif($script:moduleBuildCount -ne $expectedModuleCount)
+    elseif($env:PoshBuildTool_ModuleCount -ne $expectedModuleCount)
     {
         throw "built ${script:moduleBuildCount} modules, but expected ${expectedModuleCount}"
     } 
@@ -175,6 +176,9 @@ Function Invoke-AppveyorTest
             }
         }
     }
+    Set-AppveyorBuildVariable -Name PoshBuildTool_FailedTestsCount -Value $script:failedTestsCount
+    Set-AppveyorBuildVariable -Name PoshBuildTool_PassedTestsCount -Value $script:PassedTestsCount
+
     Write-Info "End Test Stage, Passed: $script:passedTestsCount ; failed $script:failedTestsCount"
 }
 
