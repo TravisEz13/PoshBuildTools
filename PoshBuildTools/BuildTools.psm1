@@ -31,6 +31,7 @@ function Invoke-RunTest {
     $res = Invoke-Pester -OutputFormat NUnitXml -OutputFile $testResultsFile -PassThru @PSBoundParameters
     New-AppVeyorTestResult -testResultsFile $testResultsFile
     Write-Info 'Done running tests.'
+    Write-Info 'Test result Type: $($res.gettype().fullname)'
     return $res
 }
 
