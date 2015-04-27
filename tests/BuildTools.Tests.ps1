@@ -23,6 +23,7 @@ Set-StrictMode -Version latest
 
 Describe 'Invoke-RunTest' {
     Mock -CommandName Invoke-Pester -ModuleName BuildTools -MockWith {
+        return @{}
     }
     Mock -CommandName New-AppVeyorTestResult -ModuleName BuildTools -MockWith {
     }
