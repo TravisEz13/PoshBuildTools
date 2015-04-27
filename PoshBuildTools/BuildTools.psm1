@@ -175,7 +175,7 @@ Function Invoke-AppveyorTest
             }
         }
     }
-    Write-Info 'End Test Stage.'
+    Write-Info 'End Test Stage, Passed: $script:passedTestsCount ; failed $script:failedTestsCount'
 }
 
 
