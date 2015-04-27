@@ -6,10 +6,16 @@ $webClient = New-Object 'System.Net.WebClient';
 $global:appveyor_repoName = ${env:APPVEYOR_REPO_NAME}
 $global:appveyor_repoBranch = $env:APPVEYOR_REPO_BRANCH
 $global:appveyor_pullRequestTitle = ${env:APPVEYOR_PULL_REQUEST_TITLE}
+$script:BuildVersion = '1.0.0.0'
+if($env:APPVEYOR_BUILD_VERSION)
+{
+    $script:BuildVersion = $env:APPVEYOR_BUILD_VERSION
+}
 $script:moduleBuildCount = 0
 $script:failedTestsCount = 0
 $script:passedTestsCount = 0
 function Invoke-RunTest {
+    [CmdletBinding()]
     param
     (
         [CmdletBinding()]
@@ -30,10 +36,13 @@ function Invoke-RunTest {
 
 Function Invoke-AppveyorInstall
 {
+    [CmdletBinding()]
     param
     (
         [switch]
-        $installPester
+        $skipPesterInstall,
+        [switch]
+        $skipConvertToHtmlInstall
     )
 
     Write-Info 'Starting Install stage...'
@@ -44,16 +53,22 @@ Function Invoke-AppveyorInstall
         Write-Info "Pull Request:  $global:appveyor_pullRequestTitle"    
     }
 
-    if($installPester)
+    if(!$skipPesterInstall)
     {
         Install-NugetPackage -package pester
     }
     
+    if(!$skipConvertToHtmlInstall)
+    {
+        Install-NugetPackage -package ConvertToHtml -source https://ci.appveyor.com/nuget/converttohtml
+    }
+
     Write-Info 'End Install stage.'
 }
 
 function Test-BuildInfoList
 {
+    [CmdletBinding()]
     param
     (
         $list
@@ -69,10 +84,12 @@ function Test-BuildInfoList
 }
 Function Invoke-AppveyorBuild
 {
+    [CmdletBinding()]
     param
     (
         [ValidateScript({ Test-BuildInfoList -list $_})]
-        [PsObject[]] $moduleInfoList
+        [PsObject[]] $moduleInfoList,
+        [switch] $publishModule
     )
     Write-Info 'Starting Build stage...'
     mkdir -force .\out > $null
@@ -87,10 +104,13 @@ Function Invoke-AppveyorBuild
         {
             Update-ModuleVersion -modulePath $ModulePath -moduleName $moduleName
             
-            Update-Nuspec -modulePath $ModulePath -moduleName $ModuleName
+            if($publishModule)
+            {
+                Update-Nuspec -modulePath $ModulePath -moduleName $ModuleName
 
-            Write-Info 'Creating nuget package ...'
-            nuget pack "$modulePath\${ModuleName}.nuspec" -outputdirectory  .\nuget
+                Write-Info 'Creating nuget package ...'
+                nuget pack "$modulePath\${ModuleName}.nuspec" -outputdirectory  .\nuget
+            }
 
             Write-Info 'Creating module zip ...'
             7z a -tzip ".\out\$ModuleName.zip" ".\$ModuleName\*.*"
@@ -107,6 +127,7 @@ Function Invoke-AppveyorBuild
 }
 Function Invoke-AppveyorFinish
 {
+    [CmdletBinding()]
     param
     (
         [ValidateScript({ Test-BuildInfoList -list $_})]
@@ -118,7 +139,7 @@ Function Invoke-AppveyorFinish
 
     if ($env:PoshBuildTool_failedTestsCount -gt 0) 
     { 
-        throw "$($script:failedTestsCount) tests failed."
+        throw "${env:PoshBuildTool_failedTestsCount} tests failed."
     } 
     elseif($env:PoshBuildTool_passedTestsCount -eq 0)
     {
@@ -126,7 +147,7 @@ Function Invoke-AppveyorFinish
     }
     elseif($env:PoshBuildTool_ModuleCount -ne $expectedModuleCount)
     {
-        throw "built ${script:moduleBuildCount} modules, but expected ${expectedModuleCount}"
+        throw "built ${env:PoshBuildTool_ModuleCount} modules, but expected ${expectedModuleCount}"
     } 
     else 
     {       
@@ -148,6 +169,7 @@ Function Invoke-AppveyorFinish
 }
 Function Invoke-AppveyorTest
 {
+    [CmdletBinding()]
     param
     (
         [ValidateScript({ Test-BuildInfoList -list $_})]
@@ -168,7 +190,7 @@ Function Invoke-AppveyorTest
             $CodeCoverage = $moduleInfo.CodeCoverage
             $tests = $moduleInfo.Tests
             $tests | %{ 
-                $res = Invoke-RunTest -filePath $_ -CodeCoverage $CodeCoverage
+                $res = Invoke-RunTest -Path $_ -CodeCoverage $CodeCoverage
                 $script:failedTestsCount += $res.FailedCount 
                 $script:passedTestsCount += $res.PassedCount 
                 $CodeCoverageTitle = 'Code Coverage {0:F1}%'  -f (100 * ($res.CodeCoverage.NumberOfCommandsExecuted /$res.CodeCoverage.NumberOfCommandsAnalyzed))
@@ -215,6 +237,7 @@ function Invoke-WebClientUpload
 
 
 function Write-Info {
+    [CmdletBinding()]
      param
      (
          [Parameter(Mandatory=$true, Position=0)]
@@ -239,7 +262,7 @@ function Update-ModuleVersion
 
         [ValidateNotNullOrEmpty()]
         [string]
-        $version = $env:APPVEYOR_BUILD_VERSION
+        $version = $script:BuildVersion
         )
     Write-Info "Updating Module version to: $version"
 
@@ -253,9 +276,17 @@ function Update-ModuleVersion
             $FunctionsToExport += $key
         }
         $psd1Path = (Join-path $modulePath "${moduleName}.psd1")
+        $tempFolder = Join-path $env:temp "${ModuleName}-Update-ModuleVersion"
+        if(!(test-path $tempFolder))
+        {
+            mkdir $tempFolder > $null
+        }
+        $psd1PathUni = (Join-path $tempFolder "${moduleName}.psd1")
         copy-item $psd1Path ".\${moduleName}Original.psd1.tmp"
-        New-ModuleManifest -Path $psd1Path -Guid $moduleInfo.Guid -Author $moduleInfo.Author -CompanyName $moduleInfo.CompanyName `
+        New-ModuleManifest -Path $psd1PathUni -Guid $moduleInfo.Guid -Author $moduleInfo.Author -CompanyName $moduleInfo.CompanyName `
             -Copyright $moduleInfo.Copyright -RootModule $moduleInfo.RootModule -ModuleVersion $newVersion -Description $moduleInfo.Description -FunctionsToExport $FunctionsToExport
+        Get-Content $psd1PathUni -Raw | out-file -encoding utf8 -filePath $psd1Path -force -width ([int]::MaxValue) 
+        remove-item $psd1PathUni
     }
     else {
         throw "Couldn't load moduleInfo for $moduleName"
@@ -284,10 +315,15 @@ function Get-ModuleByPath
     if ($PSVersionTable.PSVersion.Major -ge 5)
     {
         $getParams.Add('listAvailable', $true)
+        $getParams.add('name',$modulePath)
+    }
+    else
+    {
+        Import-Module $modulePath -Force
+        $getParams.add('name',$ModuleName)
     }
     
-    Import-Module $modulePath -Force
-    $moduleInfo = Get-Module -Name $moduleName @getParams
+    $moduleInfo = Get-Module @getParams
     return $moduleInfo
 }
 
@@ -304,13 +340,13 @@ function ConvertTo-Version
     )
     
     
-    $versionParts = $version.split('.')
-    $newVersion = New-Object -TypeName 'System.Version' -ArgumentList @($versionParts[0],$versionParts[1],$versionParts[2],$versionParts[3])
+    $newVersion = New-Object -TypeName 'System.Version' -ArgumentList @($version)
     return $newVersion
 }
 
 function Update-Nuspec
 {
+    [CmdletBinding()]
     param(
         $modulePath,
         $moduleName,
@@ -393,4 +429,38 @@ function Install-NugetPackage
 
     Write-Info "Installing $package using nuget"
     &nuget.exe install $package -source $source -outputDirectory $outputDirectory -ExcludeVersion
+}
+
+function Invoke-FullBuild
+{
+    [CmdletBinding()]
+    param($BuildInfoJsonPath)
+    $moduleInfoJson = Get-Content -Raw $BuildInfoJsonPath | ConvertFrom-Json
+    $moduleInfoList = @()
+
+    $moduleInfoJson.ModuleInfoList | ForEach-Object { 
+        $moduleInfoList += New-BuildModuleInfo -ModuleName $_.ModuleName -ModulePath $_.ModulePath -CodeCoverage $_.CodeCoverage -Tests $_.Tests
+    }
+
+    Invoke-AppveyorInstall -skipConvertToHtmlInstall -skipPesterInstall
+
+    Invoke-AppveyorBuild -moduleInfoList $moduleInfoList 
+
+    Invoke-AppveyorTest -moduleInfoList $moduleInfoList 
+
+    Invoke-AppveyorFinish -moduleInfoList $moduleInfoList -expectedModuleCount 1
+}
+
+function New-BuildInfoJson
+{
+    [CmdletBinding()]
+        param($BuildInfoJsonPath,
+            [ValidateScript({ Test-BuildInfoList -list $_})]
+            [PSObject[]]$ModuleInfoList)
+
+        $buildInfo = @{
+            Settings = @{}
+            ModuleInfoList =$ModuleInfoList
+        }
+        $buildInfo | ConvertTo-Json | out-file -encoding utf8 $BuildInfoJsonPath -force
 }

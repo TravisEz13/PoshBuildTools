@@ -129,17 +129,18 @@ Describe 'Invoke-AppVeyorInstall' {
     }
 
 
-    It 'should call install-nugetpackage' {
-        Invoke-AppveyorInstall -installPester
+    It 'should call install-nugetpackage for pester' {
+        Invoke-AppveyorInstall -skipConvertToHtmlInstall
         Assert-MockCalled -ModuleName BuildTools -CommandName Install-NugetPackage -Scope It -ParameterFilter {
                 $package | should be 'pester'
             } -Times 1 -Exactly
     }
-    It 'should not call install-nugetpackage' {
-        Invoke-AppveyorInstall 
-        Assert-MockCalled -ModuleName BuildTools -CommandName Install-NugetPackage -Scope It  -Times 0 -Exactly
+    It 'should call install-nugetpackage for converttohtml' {
+        Invoke-AppveyorInstall -skipPesterInstall
+        Assert-MockCalled -ModuleName BuildTools -CommandName Install-NugetPackage -Scope It -ParameterFilter {
+                $package | should be 'ConvertToHtml'
+            } -Times 1 -Exactly
     }
-
 }
 
 Describe 'Update-ModuleVersion' -Fixture {
@@ -148,6 +149,12 @@ Describe 'Update-ModuleVersion' -Fixture {
     }
     Mock -ModuleName BuildTools -CommandName New-ModuleManifest -MockWith {
     }
+    Mock -ModuleName BuildTools -CommandName Get-Content -MockWith {
+    }
+    Mock -ModuleName BuildTools -CommandName Out-file -MockWith {
+    }
+    Mock -ModuleName BuildTools -CommandName Remove-item -MockWith {
+    }
     
     It 'should update version' -test {
         $version = '1.0.0.9'
@@ -155,18 +162,17 @@ Describe 'Update-ModuleVersion' -Fixture {
         $moduleName = 'PoshBuildTools'
         $modulePath = (Resolve-Path (Join-path $RepoRoot '.\PoshBuildTools')).ProviderPath
         $psd1Path = (Join-path $modulePath "${moduleName}.psd1")
+        $tempFolder = Join-path $env:temp "${ModuleName}-Update-ModuleVersion"
+        $psd1UniPath = (Join-path $tempFolder "${moduleName}.psd1")
 
         Import-Module $modulePath
         $moduleInfo = Get-ModuleByPath -modulePath $modulePath -moduleName $moduleName
 
         Update-ModuleVersion -modulePath $modulePath -moduleName 'PoshBuildTools' -Version $version
 
-#        New-ModuleManifest -Path $psd1Path -Guid $moduleInfo.Guid -Author $moduleInfo.Author -CompanyName $moduleInfo.CompanyName `
-#            -Copyright $moduleInfo.Copyright -RootModule $moduleInfo.RootModule -ModuleVersion $newVersion -Description $moduleInfo.Description -FunctionsToExport $FunctionsToExport
-
         Assert-MockCalled -ModuleName BuildTools -CommandName New-ModuleManifest -Scope It -ParameterFilter {
                 $ModuleVersion | should be $versionObj
-                $Path | should be  $psd1Path
+                $Path | should be  $psd1UniPath
                 $Author | should be $moduleInfo.Author 
                 $CompanyName | should be $moduleInfo.CompanyName 
                 $Copyright | should be $moduleInfo.Copyright 

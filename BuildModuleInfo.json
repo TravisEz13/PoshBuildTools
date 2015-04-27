@@ -1,0 +1,13 @@
+﻿{
+    "Settings":  {
+
+                 },
+    "ModuleInfoList":  [
+                           {
+                               "Tests":  ".\\tests",
+                               "ModuleName":  "PoshBuildTools",
+                               "CodeCoverage":  ".\\PoshBuildTools\\BuildTools.psm1",
+                               "ModulePath":  ".\\PoshBuildTools"
+                           }
+                       ]
+}

@@ -45,3 +45,5 @@ Temporary Items
 # Test files
 *.psd1.tmp
 *.orig
+TestsResults.xml
+out/CodeCoverage.html

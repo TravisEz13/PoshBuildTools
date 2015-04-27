@@ -5,12 +5,12 @@ install:
       Import-Module .\PoshBuildTools
       $moduleInfoList = @()
       $moduleInfoList += New-BuildModuleInfo -ModuleName 'PoshBuildTools' -ModulePath '.\PoshBuildTools' -CodeCoverage @('.\PoshBuildTools\BuildTools.psm1') -Tests @('.\tests')
-      Invoke-AppveyorInstall -InstallPester
+      Invoke-AppveyorInstall -skipConvertToHtmlInstall
 
 build_script:
   - ps: |
       Import-Module .\PoshBuildTools
-      Invoke-AppveyorBuild -moduleInfoList $moduleInfoList      
+      Invoke-AppveyorBuild -moduleInfoList $moduleInfoList -publishModule  
 
 # Artifacts would not be collected if build failed. To do that, we use on_finish:
 #-artifacts:
