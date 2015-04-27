@@ -31,6 +31,7 @@ function Invoke-RunTest {
     $res = Invoke-Pester -OutputFormat NUnitXml -OutputFile $testResultsFile -PassThru @PSBoundParameters
     New-AppVeyorTestResult -testResultsFile $testResultsFile
     Write-Info 'Done running tests.'
+    Write-Info 'Test result Type: $($res.gettype().fullname)'
     return $res
 }
 
@@ -113,7 +114,8 @@ Function Invoke-AppveyorBuild
             }
 
             Write-Info 'Creating module zip ...'
-            7z a -tzip ".\out\$ModuleName.zip" ".\$ModuleName\*.*"
+            $filter = Join-path $modulePath '*.*'
+            7z a -tzip ".\out\$ModuleName.zip" $filter
 
             $script:moduleBuildCount ++
         }
