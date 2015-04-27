@@ -113,7 +113,8 @@ Function Invoke-AppveyorBuild
             }
 
             Write-Info 'Creating module zip ...'
-            7z a -tzip ".\out\$ModuleName.zip" ".\$ModuleName\*.*"
+            $filter = Join-path $modulePath '*.*'
+            7z a -tzip ".\out\$ModuleName.zip" $filter
 
             $script:moduleBuildCount ++
         }
