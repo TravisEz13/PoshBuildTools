@@ -136,7 +136,7 @@ Describe 'Invoke-AppVeyorInstall' {
             } -Times 1 -Exactly
     }
     It 'should call install-nugetpackage for converttohtml' {
-        Invoke-AppveyorInstall -skipConvertToHtmlInstall
+        Invoke-AppveyorInstall -skipPesterInstall
         Assert-MockCalled -ModuleName BuildTools -CommandName Install-NugetPackage -Scope It -ParameterFilter {
                 $package | should be 'ConvertToHtml'
             } -Times 1 -Exactly

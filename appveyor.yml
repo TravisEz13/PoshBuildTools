@@ -10,7 +10,7 @@ install:
 build_script:
   - ps: |
       Import-Module .\PoshBuildTools
-      Invoke-AppveyorBuild -moduleInfoList $moduleInfoList      
+      Invoke-AppveyorBuild -moduleInfoList $moduleInfoList -publishModule  
 
 # Artifacts would not be collected if build failed. To do that, we use on_finish:
 #-artifacts:

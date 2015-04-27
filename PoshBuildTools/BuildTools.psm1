@@ -79,7 +79,8 @@ Function Invoke-AppveyorBuild
     param
     (
         [ValidateScript({ Test-BuildInfoList -list $_})]
-        [PsObject[]] $moduleInfoList
+        [PsObject[]] $moduleInfoList,
+        [switch] $publishModule
     )
     Write-Info 'Starting Build stage...'
     mkdir -force .\out > $null
@@ -94,10 +95,13 @@ Function Invoke-AppveyorBuild
         {
             Update-ModuleVersion -modulePath $ModulePath -moduleName $moduleName
             
-            Update-Nuspec -modulePath $ModulePath -moduleName $ModuleName
+            if($publishModule)
+            {
+                Update-Nuspec -modulePath $ModulePath -moduleName $ModuleName
 
-            Write-Info 'Creating nuget package ...'
-            nuget pack "$modulePath\${ModuleName}.nuspec" -outputdirectory  .\nuget
+                Write-Info 'Creating nuget package ...'
+                nuget pack "$modulePath\${ModuleName}.nuspec" -outputdirectory  .\nuget
+            }
 
             Write-Info 'Creating module zip ...'
             7z a -tzip ".\out\$ModuleName.zip" ".\$ModuleName\*.*"
@@ -269,7 +273,7 @@ function Update-ModuleVersion
         copy-item $psd1Path ".\${moduleName}Original.psd1.tmp"
         New-ModuleManifest -Path $psd1PathUni -Guid $moduleInfo.Guid -Author $moduleInfo.Author -CompanyName $moduleInfo.CompanyName `
             -Copyright $moduleInfo.Copyright -RootModule $moduleInfo.RootModule -ModuleVersion $newVersion -Description $moduleInfo.Description -FunctionsToExport $FunctionsToExport
-        Get-Content $psd1PathUni -Raw | out-file -filePath $psd1Path -force -width [int]::MaxValue 
+        Get-Content $psd1PathUni -Raw | out-file -filePath $psd1Path -force -width ([int]::MaxValue) 
         del $psd1PathUni
     }
     else {
