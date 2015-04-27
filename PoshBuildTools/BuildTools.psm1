@@ -197,16 +197,20 @@ Function Invoke-AppveyorTest
                 $results = Invoke-RunTest -Path $_ -CodeCoverage $CodeCoverage
                 foreach($res in $results)
                 {
-                    $script:failedTestsCount += $res.FailedCount 
-                    $script:passedTestsCount += $res.PassedCount 
-                    $CodeCoverageTitle = 'Code Coverage {0:F1}%'  -f (100 * ($res.CodeCoverage.NumberOfCommandsExecuted /$res.CodeCoverage.NumberOfCommandsAnalyzed))
-                    $res.CodeCoverage.MissedCommands | ConvertTo-FormattedHtml -title $CodeCoverageTitle | out-file ".\out\CodeCoverage$CodeCoverageCounter.html"
-                    $CodeCoverageCounter++
+                    if($res)
+                    {
+                        Write-Info "processing result of type $($res.gettype().fullname)"
+                        $script:failedTestsCount += $res.FailedCount 
+                        $script:passedTestsCount += $res.PassedCount 
+                        $CodeCoverageTitle = 'Code Coverage {0:F1}%'  -f (100 * ($res.CodeCoverage.NumberOfCommandsExecuted /$res.CodeCoverage.NumberOfCommandsAnalyzed))
+                        $res.CodeCoverage.MissedCommands | ConvertTo-FormattedHtml -title $CodeCoverageTitle | out-file ".\out\CodeCoverage$CodeCoverageCounter.html"
+                        $CodeCoverageCounter++
+                    }
                 }
             }
         }
     }
-    
+
     Set-AppveyorBuildVariable -Name PoshBuildTool_FailedTestsCount -Value $script:failedTestsCount
     Set-AppveyorBuildVariable -Name PoshBuildTool_PassedTestsCount -Value $script:PassedTestsCount
 
