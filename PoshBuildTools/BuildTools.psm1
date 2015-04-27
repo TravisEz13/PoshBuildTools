@@ -6,10 +6,16 @@ $webClient = New-Object 'System.Net.WebClient';
 $global:appveyor_repoName = ${env:APPVEYOR_REPO_NAME}
 $global:appveyor_repoBranch = $env:APPVEYOR_REPO_BRANCH
 $global:appveyor_pullRequestTitle = ${env:APPVEYOR_PULL_REQUEST_TITLE}
+$script:BuildVersion = '1.0.0.0'
+if($env:APPVEYOR_BUILD_VERSION)
+{
+    $script:BuildVersion = $env:APPVEYOR_BUILD_VERSION
+}
 $script:moduleBuildCount = 0
 $script:failedTestsCount = 0
 $script:passedTestsCount = 0
 function Invoke-RunTest {
+    [CmdletBinding()]
     param
     (
         [CmdletBinding()]
@@ -30,6 +36,7 @@ function Invoke-RunTest {
 
 Function Invoke-AppveyorInstall
 {
+    [CmdletBinding()]
     param
     (
         [switch]
@@ -61,6 +68,7 @@ Function Invoke-AppveyorInstall
 
 function Test-BuildInfoList
 {
+    [CmdletBinding()]
     param
     (
         $list
@@ -76,6 +84,7 @@ function Test-BuildInfoList
 }
 Function Invoke-AppveyorBuild
 {
+    [CmdletBinding()]
     param
     (
         [ValidateScript({ Test-BuildInfoList -list $_})]
@@ -118,6 +127,7 @@ Function Invoke-AppveyorBuild
 }
 Function Invoke-AppveyorFinish
 {
+    [CmdletBinding()]
     param
     (
         [ValidateScript({ Test-BuildInfoList -list $_})]
@@ -159,6 +169,7 @@ Function Invoke-AppveyorFinish
 }
 Function Invoke-AppveyorTest
 {
+    [CmdletBinding()]
     param
     (
         [ValidateScript({ Test-BuildInfoList -list $_})]
@@ -179,7 +190,7 @@ Function Invoke-AppveyorTest
             $CodeCoverage = $moduleInfo.CodeCoverage
             $tests = $moduleInfo.Tests
             $tests | %{ 
-                $res = Invoke-RunTest -filePath $_ -CodeCoverage $CodeCoverage
+                $res = Invoke-RunTest -Path $_ -CodeCoverage $CodeCoverage
                 $script:failedTestsCount += $res.FailedCount 
                 $script:passedTestsCount += $res.PassedCount 
                 $CodeCoverageTitle = 'Code Coverage {0:F1}%'  -f (100 * ($res.CodeCoverage.NumberOfCommandsExecuted /$res.CodeCoverage.NumberOfCommandsAnalyzed))
@@ -226,6 +237,7 @@ function Invoke-WebClientUpload
 
 
 function Write-Info {
+    [CmdletBinding()]
      param
      (
          [Parameter(Mandatory=$true, Position=0)]
@@ -250,7 +262,7 @@ function Update-ModuleVersion
 
         [ValidateNotNullOrEmpty()]
         [string]
-        $version = $env:APPVEYOR_BUILD_VERSION
+        $version = $script:BuildVersion
         )
     Write-Info "Updating Module version to: $version"
 
@@ -273,8 +285,9 @@ function Update-ModuleVersion
         copy-item $psd1Path ".\${moduleName}Original.psd1.tmp"
         New-ModuleManifest -Path $psd1PathUni -Guid $moduleInfo.Guid -Author $moduleInfo.Author -CompanyName $moduleInfo.CompanyName `
             -Copyright $moduleInfo.Copyright -RootModule $moduleInfo.RootModule -ModuleVersion $newVersion -Description $moduleInfo.Description -FunctionsToExport $FunctionsToExport
-        Get-Content $psd1PathUni -Raw | out-file -filePath $psd1Path -force -width ([int]::MaxValue) 
-        del $psd1PathUni
+        Get-Content $psd1PathUni -Raw | out-file -encoding utf8 -filePath $psd1Path -force -width ([int]::MaxValue) 
+        Get-Content $psd1Path | Write-Verbose -verbose
+        remove-item $psd1PathUni
     }
     else {
         throw "Couldn't load moduleInfo for $moduleName"
@@ -303,10 +316,15 @@ function Get-ModuleByPath
     if ($PSVersionTable.PSVersion.Major -ge 5)
     {
         $getParams.Add('listAvailable', $true)
+        $getParams.add('name',$modulePath)
+    }
+    else
+    {
+        Import-Module $modulePath -Force
+        $getParams.add('name',$ModuleName)
     }
     
-    Import-Module $modulePath -Force
-    $moduleInfo = Get-Module -Name $moduleName @getParams
+    $moduleInfo = Get-Module @getParams
     return $moduleInfo
 }
 
@@ -329,6 +347,7 @@ function ConvertTo-Version
 
 function Update-Nuspec
 {
+    [CmdletBinding()]
     param(
         $modulePath,
         $moduleName,
@@ -411,4 +430,38 @@ function Install-NugetPackage
 
     Write-Info "Installing $package using nuget"
     &nuget.exe install $package -source $source -outputDirectory $outputDirectory -ExcludeVersion
+}
+
+function Invoke-FullBuild
+{
+    [CmdletBinding()]
+    param($BuildInfoJsonPath)
+    $moduleInfoJson = Get-Content -Raw $BuildInfoJsonPath | ConvertFrom-Json
+    $moduleInfoList = @()
+
+    $moduleInfoJson.ModuleInfoList | ForEach-Object { 
+        $moduleInfoList += New-BuildModuleInfo -ModuleName $_.ModuleName -ModulePath $_.ModulePath -CodeCoverage $_.CodeCoverage -Tests $_.Tests
+    }
+
+    Invoke-AppveyorInstall -skipConvertToHtmlInstall -skipPesterInstall
+
+    Invoke-AppveyorBuild -moduleInfoList $moduleInfoList 
+
+    Invoke-AppveyorTest -moduleInfoList $moduleInfoList 
+
+    Invoke-AppveyorFinish -moduleInfoList $moduleInfoList -expectedModuleCount 1
+}
+
+function New-BuildInfoJson
+{
+    [CmdletBinding()]
+        param($BuildInfoJsonPath,
+            [ValidateScript({ Test-BuildInfoList -list $_})]
+            [PSObject[]]$ModuleInfoList)
+
+        $buildInfo = @{
+            Settings = @{}
+            ModuleInfoList =$ModuleInfoList
+        }
+        $buildInfo | ConvertTo-Json | out-file -encoding utf8 $BuildInfoJsonPath -force
 }
