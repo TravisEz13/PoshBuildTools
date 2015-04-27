@@ -123,8 +123,29 @@ if(${env:APPVEYOR_BUILD_VERSION})
     }
 }
 
-Describe 'Update-ModuleVersion' -Fixture {
 
+Describe 'Invoke-AppVeyorInstall' {
+    Mock -ModuleName BuildTools -CommandName Install-NugetPackage -MockWith {
+    }
+
+
+    It 'should call install-nugetpackage' {
+        Invoke-AppveyorInstall -installPester
+        Assert-MockCalled -ModuleName BuildTools -CommandName Install-NugetPackage -Scope It -ParameterFilter {
+                $package | should be 'pester'
+            } -Times 1 -Exactly
+    }
+    It 'should not call install-nugetpackage' {
+        Invoke-AppveyorInstall 
+        Assert-MockCalled -ModuleName BuildTools -CommandName Install-NugetPackage -Scope It  -Times 0 -Exactly
+    }
+
+}
+
+Describe 'Update-ModuleVersion' -Fixture {
+    AfterAll {
+        Import-module $modulePath -Force
+    }
     Mock -ModuleName BuildTools -CommandName New-ModuleManifest -MockWith {
     }
     
@@ -178,3 +199,4 @@ Describe 'New-BuildModuleInfo' -Fixture {
         $result.Tests[1] | should be $params.Tests[1] 
     }
 }
+
