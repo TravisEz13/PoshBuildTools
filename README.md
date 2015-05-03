@@ -1,7 +1,8 @@
 # PoshBuildTools
 PowerShell Module to help build and test powershell modules using appveyor
 
-[![Build status](https://ci.appveyor.com/api/projects/status/eq6llmtyoyfbjc66/branch/master?svg=true)](https://ci.appveyor.com/project/TravisEz13/PoshBuildTools/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/l10954k5u06bctie/branch/master?svg=true)](https://ci.appveyor.com/project/TravisEz13/poshbuildtools/branch/master)
+[![Stories in Ready](https://badge.waffle.io/TravisEz13/ConvertToHtml.png?label=ready&title=Ready)](https://waffle.io/TravisEz13/ConvertToHtml)
 
 WMF/PowerShell 5 Installation
 --------------------------------
