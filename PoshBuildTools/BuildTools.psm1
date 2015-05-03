@@ -230,6 +230,7 @@ function New-AppVeyorTestResult
 
     Invoke-WebClientUpload -url "https://ci.appveyor.com/api/testresults/nunit/${env:APPVEYOR_JOB_ID}" -path $testResultsFile 
 }
+
 function Invoke-WebClientUpload
 {
     [CmdletBinding()]
@@ -241,10 +242,28 @@ function Invoke-WebClientUpload
         
         [Parameter(Mandatory=$true, Position=1)]
         [Object]
-        $path
+        $path,
+
+        [ValidateNotNull()]
+        [HashTable] $headers = @{},
+
+        [ValidateNotNull()]
+        [System.Text.Encoding] $Encoding = [System.Text.Encoding]::Default
     )
-    
-    $webClient.UploadFile($url, (Resolve-Path $path))
+
+    $webClient = New-Object 'System.Net.WebClient';
+
+    $webClient.Headers.Clear()
+    foreach($header in $headers.Keys)
+    {
+        [string] $value = $headers.$header
+        Write-Verbose "setting header $header : $value"
+       $webClient.Headers.Set($header.ToString(), $value)
+    }
+    Write-Verbose "uploading to: $url" -
+    $webClient.Encoding = $Encoding
+    $result = $webClient.UploadFile($url, (Resolve-Path $path))
+    [System.Text.ASCIIEncoding]::ASCII.GetString($result)
 }
 
 
