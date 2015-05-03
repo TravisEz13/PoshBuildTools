@@ -260,7 +260,7 @@ function Invoke-WebClientUpload
         Write-Verbose "setting header $header : $value"
        $webClient.Headers.Set($header.ToString(), $value)
     }
-    Write-Verbose "uploading to: $url" -
+    Write-Verbose "uploading to: $url"
     $webClient.Encoding = $Encoding
     $result = $webClient.UploadFile($url, (Resolve-Path $path))
     [System.Text.ASCIIEncoding]::ASCII.GetString($result)
