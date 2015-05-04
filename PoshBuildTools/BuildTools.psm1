@@ -438,9 +438,9 @@ function Install-Pester
     $tempFolder = Join-path $env:temp "Pester"
     if(!(test-path $tempFolder))
     {
-        md $tempFolder
+        md $tempFolder > $null
     }
-    git clone --branch CoverageReports https://github.com/TravisEz13/Pester.git $tempFolder
+    git clone -q --branch=CoverageReports https://github.com/TravisEz13/Pester.git $tempFolder
     Import-Module $tempFolder
 }
 
