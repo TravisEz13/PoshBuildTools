@@ -394,7 +394,7 @@ function New-PesterCodeCov
             if($misses.ContainsKey($lineNumber))
             {
                 Write-Verbose "Got cc miss at $lineNumber" -Verbose
-                $missInfo = $hits.$lineNumber
+                $missInfo = $misses.$lineNumber
             }
             
             if(!$missInfo -and !$hitInfo)
