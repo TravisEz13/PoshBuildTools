@@ -56,7 +56,8 @@ Function Invoke-AppveyorInstall
 
     if(!$skipPesterInstall)
     {
-        Install-NugetPackage -package pester
+        Install-Pester
+        #Install-NugetPackage -package pester
     }
     
     if(!$skipConvertToHtmlInstall)
@@ -266,7 +267,155 @@ function Invoke-WebClientUpload
     [System.Text.ASCIIEncoding]::ASCII.GetString($result)
 }
 
+function New-PesterCodeCov
+{
+    param($CodeCoverage, $repoRoot,
+        
+        [ValidateSet('ascii','utf8')]
+        $Encoding = 'ascii',
 
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $token
+    )
+
+    $files = @()
+    foreach($file in ($CodeCoverage.missedCommands | Select-Object file))
+    {
+        if($files -notcontains $file.file)
+        {
+            $files += $file.file
+        }
+    }
+    foreach($file in ($CodeCoverage.hitCommands | Select-Object file))
+    {
+        if($files -notcontains $file.file)
+        {
+            $files += $file.file
+        }
+    }
+    
+    $fileLookup=@{}
+    $fileLines =@{}
+
+    foreach($command in $CodeCoverage.MissedCommands)
+    {
+        $fileKey = $command.File.replace($repoRoot,'').replace('\','/')
+        if(!$fileLookup.ContainsKey($fileKey))
+        {
+            $fileLookup.Add($fileKey,$command.File)
+        }
+#        $fileKey = $command.File
+        if(!$fileLines.ContainsKey($fileKey))
+        {
+            $fileLines.add($fileKey, @{misses=@{}})
+        }
+        
+        $lines = $fileLines.($fileKey).misses
+
+        $lineKey = $($command.line)
+        if(!$lines.ContainsKey($lineKey))
+        {
+            $lines.Add($lineKey,1)
+        }
+        else
+        {
+            $lines.$lineKey ++
+        }
+    }
+    foreach($command in $CodeCoverage.HitCommands)
+    {
+        $fileKey = $command.File.replace($repoRoot,'').replace('\','/')
+        if(!$fileLookup.ContainsKey($fileKey))
+        {
+            $fileLookup.Add($fileKey,$command.File)
+        }
+
+         if(!$fileLines.ContainsKey($fileKey))
+        {
+            $fileLines.add($fileKey, @{hits=@{}})
+        }
+        if(!$fileLines.$fileKey.ContainsKey('hits'))
+        {
+            $fileLines.$fileKey.Add('hits',@{})
+        }
+        $lines = $fileLines.($fileKey).hits
+
+        $lineKey = $($command.line)
+        if(!$lines.ContainsKey($lineKey))
+        {
+            $lines.Add($lineKey,1)
+        }
+        else
+        {
+            $lines.$lineKey ++
+        }
+    }
+
+    $resultLineData =@{}
+    $resultMessages =@{}
+    $result = @{coverage =$resultLineData
+                messages = $resultMessages}
+    foreach($file in $fileLines.Keys)
+    {
+        $hit = 0
+        $partial = 0
+        $missed = 0
+        $hits = $fileLines.$file.hits
+        $misses = $fileLines.$file.misses
+        $max = $hits.Keys| Sort-Object -Descending | Select-Object -First 1
+        $maxMissLine = $misses.Keys| Sort-Object -Descending | Select-Object -First 1
+        if($maxMissLine -gt $max)
+        {
+            $max = $maxMissLine
+        }
+
+        $lineData=@()
+        $messages = @{}
+        # start at line 0 per codecov docs
+        for($lineNumber=0;$lineNumber -le $max;$lineNumber++)
+        {
+            $hitInfo = $hits.$lineNumber
+            $missInfo = $misses.$lineNumber
+            if(!$missInfo -and !$hitInfo)
+            {
+                $lineData += '!null!'
+            }
+            elseif($missInfo -and $hitInfo )
+            {
+                $lineData += "$hitInfo/$($hitInfo+$missInfo)"
+            }
+            elseif(!$missInfo -or $missInfo -eq 0)
+            {
+                $lineData += $hitInfo
+            }
+            else
+            {
+                $lineData += 0
+            }
+        }
+
+        $resultLineData.Add($file,$lineData)
+        $resultMessages.add($file,$messages)
+    }
+
+    $commitOutput = @(&git.exe log -1 --pretty=format:%H)
+    $commit = $commitOutput[0] 
+
+    $branchOutput = &git.exe branch 
+    $branchOutput | % {
+        if($_.startswith('*'))
+        {
+            $branch = $_.split(' ')[1]
+        }
+    }
+    
+    $json =$result | ConvertTo-Json
+    Write-Verbose "Encoding output using: $Encoding" -Verbose
+    $json = $json.Replace('"!null!"','null') 
+    $jsonPostUri = "https://codecov.io/upload/v1?token=$token&commit=$commit&branch=$branch&travis_job_id=12345"
+    Invoke-RestMethod -Method Post -Uri $jsonPostUri -Body $json -ContentType 'application/json'
+}
 
 function Write-Info {
     [CmdletBinding()]
@@ -278,6 +427,13 @@ function Write-Info {
      )
 
     Write-Host -ForegroundColor Yellow  "[APPVEYOR] [$([datetime]::UtcNow)] $message"
+}
+
+function Install-Pester
+{
+    $tempFolder = Join-path $env:temp "Pester"
+    git clone --branch CoverageReports https://github.com/TravisEz13/Pester.git $tempFolder
+    Import-Module $tempFolder
 }
 
 function Update-ModuleVersion
