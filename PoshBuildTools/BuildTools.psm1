@@ -205,6 +205,10 @@ Function Invoke-AppveyorTest
                         $script:passedTestsCount += $res.PassedCount 
                         $CodeCoverageTitle = 'Code Coverage {0:F1}%'  -f (100 * ($res.CodeCoverage.NumberOfCommandsExecuted /$res.CodeCoverage.NumberOfCommandsAnalyzed))
                         $res.CodeCoverage.MissedCommands | ConvertTo-FormattedHtml -title $CodeCoverageTitle | out-file ".\out\CodeCoverage$CodeCoverageCounter.html"
+                        if($env:CodeCovIoToken)
+                        {
+                                New-PesterCodeCov -CodeCoverage $res.CodeCoverage -repoRoot "$(Resolve-Path .\)\" -token $env:CodeCovIoToken
+                        }
                         $CodeCoverageCounter++
                     }
                 }
@@ -432,6 +436,10 @@ function Write-Info {
 function Install-Pester
 {
     $tempFolder = Join-path $env:temp "Pester"
+    if(!(test-path $tempFolder))
+    {
+        md $tempFolder
+    }
     git clone --branch CoverageReports https://github.com/TravisEz13/Pester.git $tempFolder
     Import-Module $tempFolder
 }
