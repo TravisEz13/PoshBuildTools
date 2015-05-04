@@ -384,8 +384,19 @@ function New-PesterCodeCov
         # start at line 0 per codecov docs
         for($lineNumber=0;$lineNumber -le $max;$lineNumber++)
         {
-            $hitInfo = $hits.$lineNumber
-            $missInfo = $misses.$lineNumber
+            $hitInfo = $null
+            $missInfo = $null
+            if($hits.ContainsKey($lineNumber))
+            {
+                Write-Verbose "Got cc hit at $lineNumber" -Verbose
+                $hitInfo = $hits.$lineNumber
+            }
+            if($misses.ContainsKey($lineNumber))
+            {
+                Write-Verbose "Got cc miss at $lineNumber" -Verbose
+                $missInfo = $hits.$lineNumber
+            }
+            
             if(!$missInfo -and !$hitInfo)
             {
                 $lineData += '!null!'
@@ -422,6 +433,7 @@ function New-PesterCodeCov
     $json =$result | ConvertTo-Json
     Write-Verbose "Encoding output using: $Encoding" -Verbose
     $json = $json.Replace('"!null!"','null') 
+    $json | out-file .\out\codeCov.json
     $jsonPostUri = "https://codecov.io/upload/v1?token=$token&commit=$commit&branch=$branch&travis_job_id=12345"
     Invoke-RestMethod -Method Post -Uri $jsonPostUri -Body $json -ContentType 'application/json'
 }
