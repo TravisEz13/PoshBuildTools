@@ -129,12 +129,12 @@ Describe 'Invoke-AppVeyorInstall' {
     Mock -ModuleName BuildTools -CommandName Install-NugetPackage -MockWith {
     }
 
-
+    Mock -ModuleName BuildTools -CommandName Install-Pester -MockWith {
+    }
+    
     It 'should call install-nugetpackage for pester' {
         Invoke-AppveyorInstall -skipConvertToHtmlInstall
-        Assert-MockCalled -ModuleName BuildTools -CommandName Install-NugetPackage -Scope It -ParameterFilter {
-                $package | should be 'pester'
-            } -Times 1 -Exactly
+        Assert-MockCalled -ModuleName BuildTools -CommandName Install-Pester -Scope It  -Times 1 -Exactly
     }
     It 'should call install-nugetpackage for converttohtml' {
         Invoke-AppveyorInstall -skipPesterInstall

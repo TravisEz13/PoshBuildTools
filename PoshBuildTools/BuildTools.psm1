@@ -368,8 +368,10 @@ function New-PesterCodeCov
         $hit = 0
         $partial = 0
         $missed = 0
+        Write-Verbose "summarizing for file: $file" -Verbose
         $hits = $fileLines.$file.hits
         $misses = $fileLines.$file.misses
+        Write-Verbose "fileKeys: $($fileLines.$file.Keys)" -Verbose
         $max = $hits.Keys| Sort-Object -Descending | Select-Object -First 1
         $maxMissLine = $misses.Keys| Sort-Object -Descending | Select-Object -First 1
         if($maxMissLine -gt $max)
