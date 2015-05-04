@@ -280,7 +280,11 @@ function New-PesterCodeCov
 
         [ValidateNotNullOrEmpty()]
         [string]
-        $token
+        $token,
+
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $branch = $env:APPVEYOR_REPO_BRANCH
     )
     Write-Verbose -Verbose "repoRoot: $repoRoot"
 
@@ -388,12 +392,12 @@ function New-PesterCodeCov
             $missInfo = $null
             if($hits.ContainsKey($lineNumber))
             {
-                Write-Verbose "Got cc hit at $lineNumber" -Verbose
+                Write-Verbose "Got cc hit at $lineNumber"
                 $hitInfo = $hits.$lineNumber
             }
             if($misses.ContainsKey($lineNumber))
             {
-                Write-Verbose "Got cc miss at $lineNumber" -Verbose
+                Write-Verbose "Got cc miss at $lineNumber"
                 $missInfo = $misses.$lineNumber
             }
             
@@ -422,13 +426,7 @@ function New-PesterCodeCov
     $commitOutput = @(&git.exe log -1 --pretty=format:%H)
     $commit = $commitOutput[0] 
 
-    $branchOutput = &git.exe branch 
-    $branchOutput | % {
-        if($_.startswith('*'))
-        {
-            $branch = $_.split(' ')[1]
-        }
-    }
+    Write-Verbose "Branch: $branch"
     
     $json =$result | ConvertTo-Json
     Write-Verbose "Encoding output using: $Encoding" -Verbose
