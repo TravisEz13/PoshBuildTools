@@ -282,6 +282,7 @@ function New-PesterCodeCov
         [string]
         $token
     )
+    Write-Verbose -Verbose "repoRoot: $repoRoot"
 
     $files = @()
     foreach($file in ($CodeCoverage.missedCommands | Select-Object file))
@@ -307,6 +308,7 @@ function New-PesterCodeCov
         $fileKey = $command.File.replace($repoRoot,'').replace('\','/')
         if(!$fileLookup.ContainsKey($fileKey))
         {
+            Write-Verbose -Verbose "fileKey: $fileKey"
             $fileLookup.Add($fileKey,$command.File)
         }
 #        $fileKey = $command.File
@@ -332,6 +334,7 @@ function New-PesterCodeCov
         $fileKey = $command.File.replace($repoRoot,'').replace('\','/')
         if(!$fileLookup.ContainsKey($fileKey))
         {
+            Write-Verbose -Verbose "fileKey: $fileKey"
             $fileLookup.Add($fileKey,$command.File)
         }
 
