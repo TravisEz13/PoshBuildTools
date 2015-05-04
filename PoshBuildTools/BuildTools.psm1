@@ -441,7 +441,7 @@ function Install-Pester
         md $tempFolder > $null
     }
     git clone -q --branch=CoverageReports https://github.com/TravisEz13/Pester.git $tempFolder
-    Import-Module $tempFolder
+    Import-Module -Scope Global $tempFolder
 }
 
 function Update-ModuleVersion
