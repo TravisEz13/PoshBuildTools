@@ -403,6 +403,8 @@ function New-PesterCodeCov
             
             if(!$missInfo -and !$hitInfo)
             {
+                # If I put an actual null in an array ConvertTo-Json just leaves it out
+                # I'll put this string in and clean it up later.
                 $lineData += '!null!'
             }
             elseif($missInfo -and $hitInfo )
@@ -455,7 +457,7 @@ function Install-Pester
     {
         md $tempFolder > $null
     }
-    git clone -q --branch=CoverageReports https://github.com/TravisEz13/Pester.git $tempFolder
+    git clone -q https://github.com/pester/Pester.git $tempFolder
     Import-Module -Scope Global $tempFolder
 }
 
