@@ -56,7 +56,8 @@ Function Invoke-AppveyorInstall
 
     if(!$skipPesterInstall)
     {
-        Install-NugetPackage -package pester
+        Install-Pester
+        #Install-NugetPackage -package pester
     }
     
     if(!$skipConvertToHtmlInstall)
@@ -204,6 +205,10 @@ Function Invoke-AppveyorTest
                         $script:passedTestsCount += $res.PassedCount 
                         $CodeCoverageTitle = 'Code Coverage {0:F1}%'  -f (100 * ($res.CodeCoverage.NumberOfCommandsExecuted /$res.CodeCoverage.NumberOfCommandsAnalyzed))
                         $res.CodeCoverage.MissedCommands | ConvertTo-FormattedHtml -title $CodeCoverageTitle | out-file ".\out\CodeCoverage$CodeCoverageCounter.html"
+                        if($env:CodeCovIoToken)
+                        {
+                                New-PesterCodeCov -CodeCoverage $res.CodeCoverage -repoRoot "$(Resolve-Path .\)\" -token $env:CodeCovIoToken
+                        }
                         $CodeCoverageCounter++
                     }
                 }
@@ -230,6 +235,7 @@ function New-AppVeyorTestResult
 
     Invoke-WebClientUpload -url "https://ci.appveyor.com/api/testresults/nunit/${env:APPVEYOR_JOB_ID}" -path $testResultsFile 
 }
+
 function Invoke-WebClientUpload
 {
     [CmdletBinding()]
@@ -241,13 +247,196 @@ function Invoke-WebClientUpload
         
         [Parameter(Mandatory=$true, Position=1)]
         [Object]
-        $path
+        $path,
+
+        [ValidateNotNull()]
+        [HashTable] $headers = @{},
+
+        [ValidateNotNull()]
+        [System.Text.Encoding] $Encoding = [System.Text.Encoding]::Default
     )
-    
-    $webClient.UploadFile($url, (Resolve-Path $path))
+
+    $webClient = New-Object 'System.Net.WebClient';
+
+    $webClient.Headers.Clear()
+    foreach($header in $headers.Keys)
+    {
+        [string] $value = $headers.$header
+        Write-Verbose "setting header $header : $value"
+       $webClient.Headers.Set($header.ToString(), $value)
+    }
+    Write-Verbose "uploading to: $url"
+    $webClient.Encoding = $Encoding
+    $result = $webClient.UploadFile($url, (Resolve-Path $path))
+    [System.Text.ASCIIEncoding]::ASCII.GetString($result)
 }
 
+function New-PesterCodeCov
+{
+    param($CodeCoverage, $repoRoot,
+        
+        [ValidateSet('ascii','utf8')]
+        $Encoding = 'ascii',
 
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $token,
+
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $branch = $env:APPVEYOR_REPO_BRANCH
+    )
+    Write-Verbose -Verbose "repoRoot: $repoRoot"
+
+    $files = @()
+    foreach($file in ($CodeCoverage.missedCommands | Select-Object file))
+    {
+        if($files -notcontains $file.file)
+        {
+            $files += $file.file
+        }
+    }
+    foreach($file in ($CodeCoverage.hitCommands | Select-Object file))
+    {
+        if($files -notcontains $file.file)
+        {
+            $files += $file.file
+        }
+    }
+    
+    $fileLookup=@{}
+    $fileLines =@{}
+
+    foreach($command in $CodeCoverage.MissedCommands)
+    {
+        $fileKey = $command.File.replace($repoRoot,'').replace('\','/')
+        if(!$fileLookup.ContainsKey($fileKey))
+        {
+            Write-Verbose -Verbose "fileKey: $fileKey"
+            $fileLookup.Add($fileKey,$command.File)
+        }
+#        $fileKey = $command.File
+        if(!$fileLines.ContainsKey($fileKey))
+        {
+            $fileLines.add($fileKey, @{misses=@{}})
+        }
+        
+        $lines = $fileLines.($fileKey).misses
+
+        $lineKey = $($command.line)
+        if(!$lines.ContainsKey($lineKey))
+        {
+            $lines.Add($lineKey,1)
+        }
+        else
+        {
+            $lines.$lineKey ++
+        }
+    }
+    foreach($command in $CodeCoverage.HitCommands)
+    {
+        $fileKey = $command.File.replace($repoRoot,'').replace('\','/')
+        if(!$fileLookup.ContainsKey($fileKey))
+        {
+            Write-Verbose -Verbose "fileKey: $fileKey"
+            $fileLookup.Add($fileKey,$command.File)
+        }
+
+         if(!$fileLines.ContainsKey($fileKey))
+        {
+            $fileLines.add($fileKey, @{hits=@{}})
+        }
+        if(!$fileLines.$fileKey.ContainsKey('hits'))
+        {
+            $fileLines.$fileKey.Add('hits',@{})
+        }
+        $lines = $fileLines.($fileKey).hits
+
+        $lineKey = $($command.line)
+        if(!$lines.ContainsKey($lineKey))
+        {
+            $lines.Add($lineKey,1)
+        }
+        else
+        {
+            $lines.$lineKey ++
+        }
+    }
+
+    $resultLineData =@{}
+    $resultMessages =@{}
+    $result = @{coverage =$resultLineData
+                messages = $resultMessages}
+    foreach($file in $fileLines.Keys)
+    {
+        $hit = 0
+        $partial = 0
+        $missed = 0
+        Write-Verbose "summarizing for file: $file" -Verbose
+        $hits = $fileLines.$file.hits
+        $misses = $fileLines.$file.misses
+        Write-Verbose "fileKeys: $($fileLines.$file.Keys)" -Verbose
+        $max = $hits.Keys| Sort-Object -Descending | Select-Object -First 1
+        $maxMissLine = $misses.Keys| Sort-Object -Descending | Select-Object -First 1
+        if($maxMissLine -gt $max)
+        {
+            $max = $maxMissLine
+        }
+
+        $lineData=@()
+        $messages = @{}
+        # start at line 0 per codecov docs
+        for($lineNumber=0;$lineNumber -le $max;$lineNumber++)
+        {
+            $hitInfo = $null
+            $missInfo = $null
+            if($hits.ContainsKey($lineNumber))
+            {
+                Write-Verbose "Got cc hit at $lineNumber"
+                $hitInfo = $hits.$lineNumber
+            }
+            if($misses.ContainsKey($lineNumber))
+            {
+                Write-Verbose "Got cc miss at $lineNumber"
+                $missInfo = $misses.$lineNumber
+            }
+            
+            if(!$missInfo -and !$hitInfo)
+            {
+                # If I put an actual null in an array ConvertTo-Json just leaves it out
+                # I'll put this string in and clean it up later.
+                $lineData += '!null!'
+            }
+            elseif($missInfo -and $hitInfo )
+            {
+                $lineData += "$hitInfo/$($hitInfo+$missInfo)"
+            }
+            elseif(!$missInfo -or $missInfo -eq 0)
+            {
+                $lineData += $hitInfo
+            }
+            else
+            {
+                $lineData += 0
+            }
+        }
+
+        $resultLineData.Add($file,$lineData)
+        $resultMessages.add($file,$messages)
+    }
+
+    $commitOutput = @(&git.exe log -1 --pretty=format:%H)
+    $commit = $commitOutput[0] 
+
+    Write-Verbose "Branch: $branch"
+    
+    $json =$result | ConvertTo-Json
+    Write-Verbose "Encoding output using: $Encoding" -Verbose
+    $json = $json.Replace('"!null!"','null') 
+    $json | out-file .\out\codeCov.json
+    $jsonPostUri = "https://codecov.io/upload/v1?token=$token&commit=$commit&branch=$branch&travis_job_id=12345"
+    Invoke-RestMethod -Method Post -Uri $jsonPostUri -Body $json -ContentType 'application/json'
+}
 
 function Write-Info {
     [CmdletBinding()]
@@ -259,6 +448,17 @@ function Write-Info {
      )
 
     Write-Host -ForegroundColor Yellow  "[APPVEYOR] [$([datetime]::UtcNow)] $message"
+}
+
+function Install-Pester
+{
+    $tempFolder = Join-path $env:temp "Pester"
+    if(!(test-path $tempFolder))
+    {
+        md $tempFolder > $null
+    }
+    git clone -q https://github.com/pester/Pester.git $tempFolder
+    Import-Module -Scope Global $tempFolder
 }
 
 function Update-ModuleVersion
