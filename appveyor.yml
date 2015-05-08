@@ -3,8 +3,8 @@ version: 1.0.0.{build}
 install:
   - ps: |
       Import-Module .\PoshBuildTools
-      $moduleInfoList = @()
-      $moduleInfoList += New-BuildModuleInfo -ModuleName 'PoshBuildTools' -ModulePath '.\PoshBuildTools' -CodeCoverage @('.\PoshBuildTools\BuildTools.psm1') -Tests @('.\tests')
+      $moduleInfoList = New-BuildModuleInfo -Auto
+      Write-verboseBuildModuleInfo -moduleInfoList $moduleInfoList
       Invoke-AppveyorInstall -skipConvertToHtmlInstall
 
 build_script:
@@ -19,7 +19,7 @@ build_script:
 on_finish:
   - ps: |
       Import-Module .\PoshBuildTools
-      Invoke-AppveyorFinish -moduleInfoList $moduleInfoList -expectedModuleCount 1
+      Invoke-AppveyorFinish -moduleInfoList $moduleInfoList
 
 cache:
   - C:\Users\appveyor\AppData\Local\NuGet\Cache

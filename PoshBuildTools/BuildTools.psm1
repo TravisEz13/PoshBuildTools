@@ -89,6 +89,7 @@ Function Invoke-AppveyorBuild
     [CmdletBinding()]
     param
     (
+        [Parameter(Mandatory=$true, Position=0)]
         [ValidateScript({ Test-BuildInfoList -list $_})]
         [PsObject[]] $moduleInfoList,
         [switch] $publishModule
@@ -133,15 +134,20 @@ Function Invoke-AppveyorFinish
     [CmdletBinding()]
     param
     (
+        [Parameter(Mandatory=$true, Position=0)]
         [ValidateScript({ Test-BuildInfoList -list $_})]
         [PsObject[]] $moduleInfoList,
-        [int] $expectedModuleCount
+        [int] $expectedModuleCount =1
     )
     Write-Info 'Starting finish stage...'
 
 
-    Get-ChildItem .\out | % { Push-AppveyorArtifact $_.FullName }
+    Get-ChildItem .\out | % { 
+        Write-Info "Pushing artifact $($_.FullName)"
+        Push-AppveyorArtifact $_.FullName 
+    }
 
+    Write-Info 'Determining if build passed.'
     if ($env:PoshBuildTool_failedTestsCount -gt 0) 
     { 
         throw "${env:PoshBuildTool_failedTestsCount} tests failed."
@@ -157,11 +163,12 @@ Function Invoke-AppveyorFinish
     else 
     {       
         if($global:appveyor_repoBranch -ieq 'master' -and [string]::IsNullOrEmpty($global:appveyor_pullRequestTitle))
-        {
-        Get-ChildItem .\nuget | % { 
-                    Write-Info "Pushing nuget package $_.Name to Appveyor"
-                    Push-AppveyorArtifact $_.FullName
-            }
+        {  
+            Write-Info 'Build passed, on master, and not a pull request.  Will push and nuget packages...'
+            Get-ChildItem .\nuget | % { 
+                        Write-Info "Pushing nuget package $_.Name to Appveyor"
+                        Push-AppveyorArtifact $_.FullName
+                }
         }
         else 
         {
@@ -176,6 +183,7 @@ Function Invoke-AppveyorTest
     [CmdletBinding()]
     param
     (
+        [Parameter(Mandatory=$true, Position=0)]
         [ValidateScript({ Test-BuildInfoList -list $_})]
         [PsObject[]] $moduleInfoList
     )
@@ -228,7 +236,7 @@ function New-AppVeyorTestResult
     [CmdletBinding()]
     param
     (
-        [Parameter(Mandatory=$true, Position=0, HelpMessage='Please add a help message here')]
+        [Parameter(Mandatory=$true, Position=0)]
         [Object]
         $testResultsFile
     )    
@@ -373,8 +381,18 @@ function New-PesterCodeCov
         $partial = 0
         $missed = 0
         Write-Verbose "summarizing for file: $file" -Verbose
-        $hits = $fileLines.$file.hits
-        $misses = $fileLines.$file.misses
+        $hits = @{}
+        if($fileLines.$file.ContainsKey('hits'))
+        {
+            $hits = $fileLines.$file.hits
+        }
+
+        $misses = @{}
+        if($fileLines.$file.ContainsKey('misses'))
+        {
+            $hits = $fileLines.$file.misses
+        }
+
         Write-Verbose "fileKeys: $($fileLines.$file.Keys)" -Verbose
         $max = $hits.Keys| Sort-Object -Descending | Select-Object -First 1
         $maxMissLine = $misses.Keys| Sort-Object -Descending | Select-Object -First 1
@@ -452,13 +470,14 @@ function Write-Info {
 
 function Install-Pester
 {
+    Write-Verbose -Verbose -message "Installing pester"
     $tempFolder = Join-path $env:temp "Pester"
     if(!(test-path $tempFolder))
     {
         md $tempFolder > $null
     }
     git clone -q https://github.com/pester/Pester.git $tempFolder
-    Import-Module -Scope Global $tempFolder
+    Import-Module -Scope Global $tempFolder -force -Verbose
 }
 
 function Update-ModuleVersion
@@ -581,28 +600,85 @@ function New-BuildModuleInfo
     [CmdletBinding()]
     param
     (
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="Auto", Mandatory=$true)]
+        [switch]
+        $Auto, 
+
+        [Parameter(ParameterSetName="Auto")]
+        [Parameter(ParameterSetName="Manual", Mandatory=$true)]
         [string]
         $ModuleName ,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(ParameterSetName="Auto")]
+        [Parameter(ParameterSetName="Manual", Mandatory=$true)]
         [string]
         $ModulePath ,
 
-        [string[]] $CodeCoverage,
+        [string[]] $CodeCoverage = $null,
 
-        [string[]] $Tests
+        [string[]] $Tests = $null
     )
+    if($auto)
+    {
+        $psd1Path = (Get-ChildItem *.psd1 -recurse | Select-Object -first 1).FullName
+        if([string]::IsNullOrWhiteSpace($modulePath))
+        {
+            $modulePath = Split-Path $psd1Path
+        }
+        if([string]::IsNullOrWhiteSpace($moduleName))
+        {
+            $moduleName = Split-Path -leaf $modulePath
+        }
+
+        if(!$CodeCoverage)
+        {
+            $CodeCoverage = @()
+            Get-ChildItem (Join-path $modulePath *.psm1) | ForEach-Object { $CodeCoverage += $_.FullName }            
+        }
+
+        if(!$tests)
+        {
+            $tests = (Resolve-Path .\).ProviderPath
+        }
+    }
 
     $moduleInfo = New-Object PSObject -Property @{
-        ModuleName = $ModuleName
-        ModulePath = $ModulePath
-        CodeCoverage = $CodeCoverage
-        Tests = $Tests
+            ModuleName = $ModuleName
+            ModulePath = $ModulePath
+            CodeCoverage = $CodeCoverage
+            Tests = $Tests
         }
     $moduleInfo.pstypenames.clear()
     $moduleInfo.pstypenames.add($buildInfoType)
     return $moduleInfo
+}
+
+function Write-VerboseBuildModuleInfo
+{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$true, Position=0)]
+        [ValidateScript({ Test-BuildInfoList -list $_})]
+        [PsObject[]] $moduleInfoList
+    )
+
+    Write-Verbose -Verbose -message "Build Module Info List:"    
+    ForEach($moduleInfo in $moduleInfoList)
+    {
+        Write-Verbose -Verbose -message "Build Module Info:"    
+        Write-Verbose -Verbose -message "ModuleName: $($moduleInfo.ModuleName)"    
+        Write-Verbose -Verbose -message "modulePath: $($moduleInfo.modulePath)" 
+        foreach($test in $moduleInfo.Tests)
+        {
+            Write-Verbose -Verbose -message "test: $test" 
+        }
+        foreach($CodeCoverage in $moduleInfo.CodeCoverage)
+        {
+            Write-Verbose -Verbose -message "CodeCoverage: $CodeCoverage" 
+        }
+    }    
+    Write-Verbose -Verbose -message "Done Build Module Info List"    
 }
 function Update-NuspecXml
 {
@@ -647,7 +723,10 @@ function Install-NugetPackage
 function Invoke-FullBuild
 {
     [CmdletBinding()]
-    param($BuildInfoJsonPath)
+    param(
+        [Parameter(Mandatory=$true, Position=0)]
+        $BuildInfoJsonPath
+        )
     $moduleInfoJson = Get-Content -Raw $BuildInfoJsonPath | ConvertFrom-Json
     $moduleInfoList = @()
 
@@ -667,7 +746,12 @@ function Invoke-FullBuild
 function New-BuildInfoJson
 {
     [CmdletBinding()]
-        param($BuildInfoJsonPath,
+        param(
+            [Parameter(Mandatory=$true, Position=1)]
+            [string]
+            $BuildInfoJsonPath,
+
+            [Parameter(Mandatory=$true, Position=0)]
             [ValidateScript({ Test-BuildInfoList -list $_})]
             [PSObject[]]$ModuleInfoList)
 
