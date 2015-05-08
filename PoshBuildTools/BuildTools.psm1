@@ -390,7 +390,7 @@ function New-PesterCodeCov
         $misses = @{}
         if($fileLines.$file.ContainsKey('misses'))
         {
-            $hits = $fileLines.$file.misses
+            $misses = $fileLines.$file.misses
         }
 
         Write-Verbose "fileKeys: $($fileLines.$file.Keys)" -Verbose
