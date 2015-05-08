@@ -390,7 +390,7 @@ function New-PesterCodeCov
         $misses = @{}
         if($fileLines.$file.ContainsKey('misses'))
         {
-            $hits = $fileLines.$file.misses
+            $misses = $fileLines.$file.misses
         }
 
         Write-Verbose "fileKeys: $($fileLines.$file.Keys)" -Verbose
@@ -633,7 +633,7 @@ function New-BuildModuleInfo
         if(!$CodeCoverage)
         {
             $CodeCoverage = @()
-            Get-ChildItem (Join-path $modulePath *.psm1) | ForEach-Object { $CodeCoverage += $_.FullName }            
+            Get-ChildItem (Join-path $modulePath *.psm1) -recurse | ForEach-Object { $CodeCoverage += $_.FullName }            
         }
 
         if(!$tests)
