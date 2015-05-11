@@ -5,7 +5,7 @@ PowerShell Module to help build and test powershell modules using appveyor
 [![Stories in Ready](https://badge.waffle.io/TravisEz13/ConvertToHtml.png?label=ready&title=Ready)](https://waffle.io/TravisEz13/ConvertToHtml)
 [![codecov.io](http://codecov.io/github/TravisEz13/PoshBuildTools/coverage.svg?branch=master)](http://codecov.io/github/TravisEz13/PoshBuildTools?branch=master)
 
-![codecov.io](http://codecov.io/github/TravisEz13/PoshBuildTools/branch.svg?branch=master)
+[![codecov.io](http://codecov.io/github/TravisEz13/PoshBuildTools/branch.svg?branch=master)](http://codecov.io/github/TravisEz13/PoshBuildTools?branch=master)
 
 WMF/PowerShell 5 Installation
 --------------------------------
