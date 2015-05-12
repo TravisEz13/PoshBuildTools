@@ -221,10 +221,11 @@ Describe 'New-BuildModuleInfo' -Fixture {
 Describe 'Invoke-ProcessTestResults' -Fixture {
     # Cannot invoke pester inside pester so using a job
     $job = start-job -scriptblock {
-        param($path, $CodeCoverage, $modulePath)
+        param($path, $CodeCoverage, $modulePath, $pesterPath)
         Import-Module -force $modulePath
+        Import-Module -force $pesterPath
         return Invoke-RunTest -path $path -CodeCoverage $CodeCoverage
-    } -argumentList @("$PSScriptRoot\data\SampleCode.Tests.ps1", "$PSScriptRoot\data\SampleCode.psm1", $modulePath) -Verbose
+    } -argumentList @("$PSScriptRoot\data\SampleCode.Tests.ps1", "$PSScriptRoot\data\SampleCode.psm1", $modulePath, ((get-module pester).path)) -Verbose
     $results = Receive-Job -Wait -Job $job -Verbose
     It 'should call implementing function and not return' {
         Mock -ModuleName BuildTools -CommandName New-PesterCodeCov -Verifiable -MockWith {}
