@@ -77,12 +77,23 @@ Describe 'New-AppVeyorTestResult' {
     Mock -ModuleName BuildTools -CommandName Invoke-WebClientUpload -MockWith {
     }
 
-    it 'should call invoke-webclientupdload' -test {
-        New-AppVeyorTestResult -testResultsFile 'foobar.xml'
-        Assert-MockCalled -ModuleName BuildTools -CommandName Invoke-WebClientUpload -ParameterFilter {
-                $url -eq "https://ci.appveyor.com/api/testresults/nunit/${env:APPVEYOR_JOB_ID}" -and `
-                $path -eq  'foobar.xml'
-            }
+    if(${env:APPVEYOR_JOB_ID})
+    {
+        it 'should call invoke-webclientupdload' -test {
+            New-AppVeyorTestResult -testResultsFile 'foobar.xml'
+            Assert-MockCalled -ModuleName BuildTools -CommandName Invoke-WebClientUpload -ParameterFilter {
+                    $url -eq "https://ci.appveyor.com/api/testresults/nunit/${env:APPVEYOR_JOB_ID}" -and `
+                    $path -eq  'foobar.xml'
+                }
+        }
+    }
+    else 
+    {
+        it 'should not call invoke-webclientupdload' -test {
+            New-AppVeyorTestResult -testResultsFile 'foobar.xml'
+            Assert-MockCalled -ModuleName BuildTools -CommandName Invoke-WebClientUpload -Exactly -times 0
+        }
+        
     }
 
 }
@@ -207,3 +218,22 @@ Describe 'New-BuildModuleInfo' -Fixture {
     }
 }
 
+Describe 'Invoke-ProcessTestResults' -Fixture {
+    # Cannot invoke pester inside pester so using a job
+    $job = start-job -scriptblock {
+        param($path, $CodeCoverage, $modulePath)
+        Import-Module -force $modulePath
+        return Invoke-RunTest -path $path -CodeCoverage $CodeCoverage
+    } -argumentList @("$PSScriptRoot\data\SampleCode.Tests.ps1", "$PSScriptRoot\data\SampleCode.psm1", $modulePath) -Verbose
+    $results = Receive-Job -Wait -Job $job -Verbose
+    It 'should call implementing function and not return' {
+        Mock -ModuleName BuildTools -CommandName New-PesterCodeCov -Verifiable -MockWith {}
+        Mock -ModuleName BuildTools -CommandName ConvertTo-FormattedHtml -Verifiable -MockWith {}
+        Mock -ModuleName BuildTools -CommandName Out-file -MockWith {}
+        Mock -ModuleName BuildTools -CommandName Invoke-RestMethod -MockWith {}
+        Invoke-ProcessTestResults -results $results -token 'FakeToken'| should Be $null
+        Assert-VerifiableMocks
+        Assert-MockCalled -ModuleName BuildTools -CommandName Out-file -Exactly -times 0
+        Assert-MockCalled -ModuleName BuildTools -CommandName Invoke-RestMethod -Exactly -times 0
+    }
+}
