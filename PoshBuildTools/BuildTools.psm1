@@ -253,7 +253,7 @@ function Invoke-ProcessTestResults
             
             if($token)
             {
-                New-PesterCodeCov -CodeCoverage $res.CodeCoverage -repoRoot "$(Resolve-Path .\)\" -token $token
+                New-PesterCodeCov -CodeCoverage $res.CodeCoverage -repoRoot "$(Resolve-Path .\)\" -token $token > $null
             }
             $CodeCoverageCounter++
         }
