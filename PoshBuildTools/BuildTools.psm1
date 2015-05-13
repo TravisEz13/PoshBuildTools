@@ -205,7 +205,9 @@ Function Invoke-AppveyorTest
             $tests = $moduleInfo.Tests
             $tests | %{ 
                 $results = Invoke-RunTest -Path $_ -CodeCoverage $CodeCoverage
-                Invoke-ProcessTestResults -results $results
+                $resultTable = Invoke-ProcessTestResults -results $results
+                $script:failedTestsCount += $resultTable.failedTestsCount
+                $script:PassedTestsCount += $resultTable.PassedTestsCount
             }
         }
     }
@@ -228,15 +230,16 @@ function Invoke-ProcessTestResults
         [string]
         $token = $env:CodeCovIoToken
     )
-    
+    $failedTestsCount =0
+    $passedTestsCount =0
     $CodeCoverageCounter = 1
     foreach($res in $results)
     {
         if($res)
         {
             Write-Info "processing result of type $($res.gettype().fullname)"
-            $script:failedTestsCount += $res.FailedCount 
-            $script:passedTestsCount += $res.PassedCount 
+            $failedTestsCount += $res.FailedCount 
+            $passedTestsCount += $res.PassedCount 
             $CodeCoverageTitle = 'Code Coverage {0:F1}%'  -f (100 * ($res.CodeCoverage.NumberOfCommandsExecuted /$res.CodeCoverage.NumberOfCommandsAnalyzed))
             
             if($res.CodeCoverage.MissedCommands.Count -gt 0)
@@ -254,6 +257,10 @@ function Invoke-ProcessTestResults
             }
             $CodeCoverageCounter++
         }
+    }
+    return @{
+        failedTestsCount = $failedTestsCount
+        passedTestsCount = $passedTestsCount
     }
 }
 
