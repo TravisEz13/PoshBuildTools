@@ -1,4 +1,6 @@
 # PoshBuildTools
+
+[![Join the chat at https://gitter.im/TravisEz13/PoshBuildTools](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/TravisEz13/PoshBuildTools?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 PowerShell Module to help build and test powershell modules using appveyor
 
 [![Build status](https://ci.appveyor.com/api/projects/status/l10954k5u06bctie/branch/master?svg=true)](https://ci.appveyor.com/project/TravisEz13/poshbuildtools/branch/master)
