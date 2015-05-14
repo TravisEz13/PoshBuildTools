@@ -27,4 +27,4 @@ Examples/Testing:
 See the following files:
 
 * Appveyor.yml
-*.\tools\AppveyorPhases.psm1
+* .\tools\AppveyorPhases.psm1
