@@ -1,0 +1,75 @@
+﻿{
+    "TagFilter":  [
+                      ""
+                  ],
+    "ExcludeTagFilter":  [
+                             ""
+                         ],
+    "TestNameFilter":  null,
+    "TotalCount":  1,
+    "PassedCount":  1,
+    "FailedCount":  0,
+    "SkippedCount":  0,
+    "PendingCount":  0,
+    "Time":  {
+                 "Ticks":  1972441,
+                 "Days":  0,
+                 "Hours":  0,
+                 "Milliseconds":  197,
+                 "Minutes":  0,
+                 "Seconds":  0,
+                 "TotalDays":  2.2829178240740739E-06,
+                 "TotalHours":  5.4790027777777774E-05,
+                 "TotalMilliseconds":  197.2441,
+                 "TotalMinutes":  0.0032874016666666669,
+                 "TotalSeconds":  0.19724409999999998
+             },
+    "TestResult":  [
+                       {
+                           "Describe":  "add",
+                           "Context":  "",
+                           "Name":  "Should add 1 + 1 to get 2",
+                           "Result":  "Passed",
+                           "Passed":  true,
+                           "Time":  {
+                                        "Ticks":  1972441,
+                                        "Days":  0,
+                                        "Hours":  0,
+                                        "Milliseconds":  197,
+                                        "Minutes":  0,
+                                        "Seconds":  0,
+                                        "TotalDays":  2.2829178240740739E-06,
+                                        "TotalHours":  5.4790027777777774E-05,
+                                        "TotalMilliseconds":  197.2441,
+                                        "TotalMinutes":  0.0032874016666666669,
+                                        "TotalSeconds":  0.19724409999999998
+                                    },
+                           "FailureMessage":  "",
+                           "StackTrace":  "",
+                           "ParameterizedSuiteName":  "",
+                           "Parameters":  {
+
+                                          }
+                       }
+                   ],
+    "CodeCoverage":  {
+                         "NumberOfCommandsAnalyzed":  1,
+                         "NumberOfFilesAnalyzed":  1,
+                         "NumberOfCommandsExecuted":  1,
+                         "NumberOfCommandsMissed":  0,
+                         "MissedCommands":  [
+
+                                            ],
+                         "HitCommands":  [
+                                             {
+                                                 "File":  "C:\\Users\\tplunk\\Documents\\GitHub\\PoshBuildTools\\tests\\Data\\SampleCode.psm1",
+                                                 "Line":  8,
+                                                 "Function":  "Add",
+                                                 "Command":  "return $x + $y"
+                                             }
+                                         ],
+                         "AnalyzedFiles":  [
+                                               "C:\\Users\\tplunk\\Documents\\GitHub\\PoshBuildTools\\tests\\Data\\SampleCode.psm1"
+                                           ]
+                     }
+}
