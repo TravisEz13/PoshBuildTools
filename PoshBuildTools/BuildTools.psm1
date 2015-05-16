@@ -29,7 +29,9 @@ function Invoke-RunTest {
     $testResultsFile = 'TestsResults.xml'
     
     $res = Invoke-Pester -OutputFormat NUnitXml -OutputFile $testResultsFile -PassThru @PSBoundParameters
+
     New-AppVeyorTestResult -testResultsFile $testResultsFile
+
     Write-Info 'Done running tests.'
     Write-Info "Test result Type: $($res.gettype().fullname)"
     return $res
@@ -191,7 +193,6 @@ Function Invoke-AppveyorTest
     # setup variables for the whole build process
     #
     #
-    $CodeCoverageCounter = 1
 
     foreach($moduleInfo in $moduleInfoList)
     {
@@ -204,22 +205,9 @@ Function Invoke-AppveyorTest
             $tests = $moduleInfo.Tests
             $tests | %{ 
                 $results = Invoke-RunTest -Path $_ -CodeCoverage $CodeCoverage
-                foreach($res in $results)
-                {
-                    if($res)
-                    {
-                        Write-Info "processing result of type $($res.gettype().fullname)"
-                        $script:failedTestsCount += $res.FailedCount 
-                        $script:passedTestsCount += $res.PassedCount 
-                        $CodeCoverageTitle = 'Code Coverage {0:F1}%'  -f (100 * ($res.CodeCoverage.NumberOfCommandsExecuted /$res.CodeCoverage.NumberOfCommandsAnalyzed))
-                        $res.CodeCoverage.MissedCommands | ConvertTo-FormattedHtml -title $CodeCoverageTitle | out-file ".\out\CodeCoverage$CodeCoverageCounter.html"
-                        if($env:CodeCovIoToken)
-                        {
-                                New-PesterCodeCov -CodeCoverage $res.CodeCoverage -repoRoot "$(Resolve-Path .\)\" -token $env:CodeCovIoToken
-                        }
-                        $CodeCoverageCounter++
-                    }
-                }
+                $resultTable = Invoke-ProcessTestResults -results $results
+                $script:failedTestsCount += $resultTable.failedTestsCount
+                $script:PassedTestsCount += $resultTable.PassedTestsCount
             }
         }
     }
@@ -230,6 +218,51 @@ Function Invoke-AppveyorTest
     Write-Info "End Test Stage, Passed: $script:passedTestsCount ; failed $script:failedTestsCount"
 }
 
+function Invoke-ProcessTestResults
+{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory=$true, Position=0)]
+        [Object]
+        $results,
+
+        [string]
+        $token = $env:CodeCovIoToken
+    )
+    $failedTestsCount =0
+    $passedTestsCount =0
+    $CodeCoverageCounter = 1
+    foreach($res in $results)
+    {
+        if($res)
+        {
+            Write-Info "processing result of type $($res.gettype().fullname)"
+            $failedTestsCount += $res.FailedCount 
+            $passedTestsCount += $res.PassedCount 
+            $CodeCoverageTitle = 'Code Coverage {0:F1}%'  -f (100 * ($res.CodeCoverage.NumberOfCommandsExecuted /$res.CodeCoverage.NumberOfCommandsAnalyzed))
+            
+            if($res.CodeCoverage.MissedCommands.Count -gt 0)
+            {
+                $res.CodeCoverage.MissedCommands | ConvertTo-FormattedHtml -title $CodeCoverageTitle | out-file ".\out\CodeCoverage$CodeCoverageCounter.html"
+            }
+            else 
+            {
+                '' | ConvertTo-FormattedHtml -title $CodeCoverageTitle | out-file ".\out\CodeCoverage$CodeCoverageCounter.html"                            
+            }
+            
+            if($token)
+            {
+                New-PesterCodeCov -CodeCoverage $res.CodeCoverage -repoRoot "$(Resolve-Path .\)\" -token $token > $null
+            }
+            $CodeCoverageCounter++
+        }
+    }
+    return @{
+        failedTestsCount = $failedTestsCount
+        passedTestsCount = $passedTestsCount
+    }
+}
 
 function New-AppVeyorTestResult
 {
@@ -241,7 +274,12 @@ function New-AppVeyorTestResult
         $testResultsFile
     )    
 
-    Invoke-WebClientUpload -url "https://ci.appveyor.com/api/testresults/nunit/${env:APPVEYOR_JOB_ID}" -path $testResultsFile 
+    if(${env:APPVEYOR_JOB_ID})
+    {
+        $url = "https://ci.appveyor.com/api/testresults/nunit/${env:APPVEYOR_JOB_ID}"
+        Write-Verbose -message "Uploading test results to: $url" -Verbose
+        Invoke-WebClientUpload -url $url -path $testResultsFile 
+    }
 }
 
 function Invoke-WebClientUpload
@@ -273,7 +311,7 @@ function Invoke-WebClientUpload
         Write-Verbose "setting header $header : $value"
        $webClient.Headers.Set($header.ToString(), $value)
     }
-    Write-Verbose "uploading to: $url"
+    Write-Verbose -Verbose "uploading to: $url"
     $webClient.Encoding = $Encoding
     $result = $webClient.UploadFile($url, (Resolve-Path $path))
     [System.Text.ASCIIEncoding]::ASCII.GetString($result)
@@ -470,8 +508,8 @@ function Write-Info {
 
 function Install-Pester
 {
-    Write-Verbose -Verbose -message "Installing pester"
-    $tempFolder = Join-path $env:temp "Pester"
+    Write-Verbose -Verbose -message 'Installing pester'
+    $tempFolder = Join-path $env:temp 'Pester'
     if(!(test-path $tempFolder))
     {
         md $tempFolder > $null
@@ -600,17 +638,17 @@ function New-BuildModuleInfo
     [CmdletBinding()]
     param
     (
-        [Parameter(ParameterSetName="Auto", Mandatory=$true)]
+        [Parameter(ParameterSetName='Auto', Mandatory=$true)]
         [switch]
         $Auto, 
 
-        [Parameter(ParameterSetName="Auto")]
-        [Parameter(ParameterSetName="Manual", Mandatory=$true)]
+        [Parameter(ParameterSetName='Auto')]
+        [Parameter(ParameterSetName='Manual', Mandatory=$true)]
         [string]
         $ModuleName ,
 
-        [Parameter(ParameterSetName="Auto")]
-        [Parameter(ParameterSetName="Manual", Mandatory=$true)]
+        [Parameter(ParameterSetName='Auto')]
+        [Parameter(ParameterSetName='Manual', Mandatory=$true)]
         [string]
         $ModulePath ,
 
@@ -663,10 +701,10 @@ function Write-VerboseBuildModuleInfo
         [PsObject[]] $moduleInfoList
     )
 
-    Write-Verbose -Verbose -message "Build Module Info List:"    
+    Write-Verbose -Verbose -message 'Build Module Info List:'    
     ForEach($moduleInfo in $moduleInfoList)
     {
-        Write-Verbose -Verbose -message "Build Module Info:"    
+        Write-Verbose -Verbose -message 'Build Module Info:'    
         Write-Verbose -Verbose -message "ModuleName: $($moduleInfo.ModuleName)"    
         Write-Verbose -Verbose -message "modulePath: $($moduleInfo.modulePath)" 
         foreach($test in $moduleInfo.Tests)
@@ -678,7 +716,7 @@ function Write-VerboseBuildModuleInfo
             Write-Verbose -Verbose -message "CodeCoverage: $CodeCoverage" 
         }
     }    
-    Write-Verbose -Verbose -message "Done Build Module Info List"    
+    Write-Verbose -Verbose -message 'Done Build Module Info List'    
 }
 function Update-NuspecXml
 {
