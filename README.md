@@ -11,13 +11,17 @@ WMF/PowerShell 5 Installation
 --------------------------------
 From PowerShell run:
 
-	Register-PSRepository -Name PoshBuildTools -SourceLocation https://ci.appveyor.com/nuget/poshbuildtools
-	Install-Module PoshBuildTools -Scope CurrentUser
+```PowerShell
+Register-PSRepository -Name PoshBuildTools -SourceLocation https://ci.appveyor.com/nuget/poshbuildtools
+Install-Module PoshBuildTools -Scope CurrentUser
+```
 
 WMF/PowerShell 4 Installation
 -----------------------------
  1. Download nuget.exe from [NuGet.org](https://nuget.org/nuget.exe) 
- 2. &nuget.exe install PoshBuildTools -source https://ci.appveyor.com/nuget/poshbuildtools -outputDirectory "$env:USERPROFILE\Documents\WindowsPowerShell\Modules\" -ExcludeVersion
+```PowerShell
+&nuget.exe install PoshBuildTools -source https://ci.appveyor.com/nuget/poshbuildtools -outputDirectory "$env:USERPROFILE\Documents\WindowsPowerShell\Modules\" -ExcludeVersion
+```
 
 Examples/Testing:
 -----------------
