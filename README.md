@@ -1,4 +1,7 @@
 # PoshBuildTools
+
+**Depreciated:** This module has been replaced by [DscResource.CodeCoverage](https://github.com/PowerShell/DscResource.Tests/tree/dev/DscResource.CodeCoverage)
+
 PowerShell Module to help build and test powershell modules using appveyor
 
 [![Build status](https://ci.appveyor.com/api/projects/status/l10954k5u06bctie/branch/master?svg=true)](https://ci.appveyor.com/project/TravisEz13/poshbuildtools/branch/master)
