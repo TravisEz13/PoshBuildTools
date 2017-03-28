@@ -27,5 +27,5 @@ Install-Module PoshBuildTools -Scope CurrentUser
 
 ~~See the following files:~~
 
-* Appveyor.yml
-*.\tools\AppveyorPhases.psm1
+* ~~Appveyor.yml~~
+* ~~.\tools\AppveyorPhases.psm1~~
