@@ -17,7 +17,7 @@ Install-Module PoshBuildTools -Scope CurrentUser
 
 ## ~~WMF/PowerShell 4 Installation~~
 
-~~Download nuget.exe from ~~ [~~NuGet.org~~](https://nuget.org/nuget.exe)
+1. ~~Download nuget.exe from~~ [~~NuGet.org~~](https://nuget.org/nuget.exe)
 
 ```PowerShell
 &nuget.exe install PoshBuildTools -source https://ci.appveyor.com/nuget/poshbuildtools -outputDirectory "$env:USERPROFILE\Documents\WindowsPowerShell\Modules\" -ExcludeVersion
